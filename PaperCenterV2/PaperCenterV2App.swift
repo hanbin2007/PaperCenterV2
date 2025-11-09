@@ -12,7 +12,21 @@ import SwiftData
 struct PaperCenterV2App: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            // Core models
+            PDFBundle.self,
+            Page.self,
+            PageVersion.self,
+            PageGroup.self,
+            Doc.self,
+            // Metadata models
+            Tag.self,
+            TagGroup.self,
+            Variable.self,
+            // Variable assignments
+            PDFBundleVariableAssignment.self,
+            DocVariableAssignment.self,
+            PageGroupVariableAssignment.self,
+            PageVariableAssignment.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
@@ -25,7 +39,7 @@ struct PaperCenterV2App: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            PlaceholderView()
         }
         .modelContainer(sharedModelContainer)
     }
