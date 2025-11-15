@@ -8,6 +8,9 @@
 import Foundation
 import SwiftData
 import PDFKit
+import Vision
+import CoreImage
+import UIKit
 
 /// Service for importing PDF files into the app sandbox and managing PDFBundles
 @MainActor
@@ -53,6 +56,40 @@ final class PDFImportService {
 
     // MARK: - PDF Import
 
+    /// Import multiple PDF files as a complete bundle
+    /// - Parameters:
+    ///   - name: Bundle name
+    ///   - displayPDF: Display PDF URL (required)
+    ///   - ocrPDF: OCR PDF URL (optional)
+    ///   - originalPDF: Original PDF URL (optional)
+    /// - Returns: PDFBundle containing all imported files
+    /// - Throws: Import errors
+    func importPDFBundle(
+        name: String,
+        displayPDF: URL,
+        ocrPDF: URL? = nil,
+        originalPDF: URL? = nil
+    ) async throws -> PDFBundle {
+        // Create new bundle with name
+        let bundle = PDFBundle(name: name)
+        modelContext.insert(bundle)
+
+        // Import display PDF (required)
+        let _ = try await importPDF(from: displayPDF, type: .display, into: bundle)
+
+        // Import OCR PDF if provided
+        if let ocrURL = ocrPDF {
+            let _ = try await importPDF(from: ocrURL, type: .ocr, into: bundle)
+        }
+
+        // Import original PDF if provided
+        if let originalURL = originalPDF {
+            let _ = try await importPDF(from: originalURL, type: .original, into: bundle)
+        }
+
+        return bundle
+    }
+
     /// Import a PDF file into a new or existing PDFBundle
     /// - Parameters:
     ///   - sourceURL: External URL of the PDF file
@@ -65,14 +102,27 @@ final class PDFImportService {
         type: PDFType,
         into bundle: PDFBundle? = nil
     ) async throws -> PDFBundle {
-        // Validate the source file
+        // Validate it's a PDF by extension
+        guard sourceURL.pathExtension.lowercased() == "pdf" else {
+            throw PDFImportError.invalidFileType
+        }
+
+        // Access security-scoped resource (needed for file picker URLs)
+        let didStartAccessing = sourceURL.startAccessingSecurityScopedResource()
+        defer {
+            if didStartAccessing {
+                sourceURL.stopAccessingSecurityScopedResource()
+            }
+        }
+
+        // Validate the source file (inside security scope)
         guard fileManager.fileExists(atPath: sourceURL.path) else {
             throw PDFImportError.sourceFileNotFound
         }
 
-        // Validate it's a PDF
-        guard sourceURL.pathExtension.lowercased() == "pdf" else {
-            throw PDFImportError.invalidFileType
+        // Validate it's a readable PDF
+        guard let _ = PDFDocument(url: sourceURL) else {
+            throw PDFImportError.invalidPDF
         }
 
         // Get or create the bundle
@@ -115,8 +165,22 @@ final class PDFImportService {
 
         // If OCR PDF, extract text in background
         if type == .ocr {
-            Task.detached {
-                await self.extractOCRText(for: targetBundle, at: targetURL)
+            let bundleID = targetBundle.id
+            let useVisionOCR = OCRSettings.shared.isVisionOCREnabled
+            let language = OCRSettings.shared.ocrLanguage
+
+            // Set initial status
+            targetBundle.ocrExtractionStatus = "inProgress"
+            targetBundle.ocrExtractionProgress = 0.0
+
+            Task.detached { [modelContext] in
+                await Self.extractOCRText(
+                    bundleID: bundleID,
+                    pdfURL: targetURL,
+                    modelContext: modelContext,
+                    useVisionOCR: useVisionOCR,
+                    language: language
+                )
             }
         }
 
@@ -125,33 +189,177 @@ final class PDFImportService {
 
     // MARK: - OCR Text Extraction
 
-    /// Extract OCR text from a PDF file
+    /// Extract OCR text from a PDF file using Vision framework
     /// - Parameters:
-    ///   - bundle: PDFBundle to update with extracted text
+    ///   - bundleID: ID of the bundle to update
     ///   - pdfURL: URL of the PDF file
-    private func extractOCRText(for bundle: PDFBundle, at pdfURL: URL) async {
+    ///   - modelContext: Model context for database updates
+    ///   - useVisionOCR: Whether to use Vision framework OCR for image-based pages
+    ///   - language: OCR language to use
+    private static func extractOCRText(
+        bundleID: UUID,
+        pdfURL: URL,
+        modelContext: ModelContext,
+        useVisionOCR: Bool,
+        language: OCRLanguage
+    ) async {
         guard let pdfDocument = PDFDocument(url: pdfURL) else {
-            print("Error: Unable to load PDF document")
+            print("OCR Error: Unable to load PDF document at \(pdfURL)")
+            await updateBundleStatus(bundleID: bundleID, modelContext: modelContext, status: "failed", progress: 0.0)
             return
         }
 
         var extractedText: [Int: String] = [:]
+        let pageCount = pdfDocument.pageCount
+
+        print("Starting OCR extraction for \(pageCount) pages (Vision OCR: \(useVisionOCR ? "enabled" : "disabled"))...")
 
         // Extract text from each page
-        for pageIndex in 0..<pdfDocument.pageCount {
+        for pageIndex in 0..<pageCount {
             guard let page = pdfDocument.page(at: pageIndex) else { continue }
 
-            // PDFPage provides basic text extraction
-            if let pageText = page.string {
-                // Store with 1-based page number
-                extractedText[pageIndex + 1] = pageText
+            // First try: Extract embedded text (faster)
+            if let embeddedText = page.string, !embeddedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                extractedText[pageIndex + 1] = embeddedText
+            } else if useVisionOCR {
+                // Second try: Use Vision framework for image-based OCR (only if enabled)
+                // Render on main thread but do it async
+                if let pageImage = await renderPageToImageOnMain(page) {
+                    if let ocrText = await performVisionOCR(on: pageImage, language: language) {
+                        extractedText[pageIndex + 1] = ocrText
+                    }
+                }
+            }
+
+            // Update progress only every 5 pages or at the end
+            let shouldUpdateProgress = (pageIndex + 1) % 5 == 0 || pageIndex == pageCount - 1
+            if shouldUpdateProgress {
+                let progress = Double(pageIndex + 1) / Double(pageCount)
+                await updateBundleProgress(bundleID: bundleID, modelContext: modelContext, progress: progress)
             }
         }
 
-        // Update the bundle on main actor
+        print("OCR extraction complete: \(extractedText.count) pages with text")
+
+        // Update the bundle with final results
         await MainActor.run {
-            bundle.ocrTextByPage = extractedText
-            bundle.touch()
+            // Fetch the bundle and update it
+            let descriptor = FetchDescriptor<PDFBundle>(
+                predicate: #Predicate { bundle in
+                    bundle.id == bundleID
+                }
+            )
+
+            if let bundles = try? modelContext.fetch(descriptor),
+               let bundle = bundles.first {
+                bundle.ocrTextByPage = extractedText
+                bundle.ocrExtractionStatus = "completed"
+                bundle.ocrExtractionProgress = 1.0
+                bundle.touch()
+
+                // Save the context
+                try? modelContext.save()
+            }
+        }
+    }
+
+    /// Update bundle OCR progress (without saving to reduce UI lag)
+    private static func updateBundleProgress(
+        bundleID: UUID,
+        modelContext: ModelContext,
+        progress: Double
+    ) async {
+        await MainActor.run {
+            let descriptor = FetchDescriptor<PDFBundle>(
+                predicate: #Predicate { bundle in
+                    bundle.id == bundleID
+                }
+            )
+
+            if let bundles = try? modelContext.fetch(descriptor),
+               let bundle = bundles.first {
+                bundle.ocrExtractionProgress = progress
+                // Don't save immediately - reduces UI lag
+                // Final save happens in extractOCRText when complete
+            }
+        }
+    }
+
+    /// Update bundle OCR status
+    private static func updateBundleStatus(
+        bundleID: UUID,
+        modelContext: ModelContext,
+        status: String,
+        progress: Double
+    ) async {
+        await MainActor.run {
+            let descriptor = FetchDescriptor<PDFBundle>(
+                predicate: #Predicate { bundle in
+                    bundle.id == bundleID
+                }
+            )
+
+            if let bundles = try? modelContext.fetch(descriptor),
+               let bundle = bundles.first {
+                bundle.ocrExtractionStatus = status
+                bundle.ocrExtractionProgress = progress
+                try? modelContext.save()
+            }
+        }
+    }
+
+    /// Render a PDF page to an image for Vision OCR (optimized for speed)
+    private static func renderPageToImageOnMain(_ page: PDFPage) async -> CIImage? {
+        await MainActor.run {
+            // Use thumbnail method which is faster than full rendering
+            let pageRect = page.bounds(for: .mediaBox)
+            // Use reasonable size for OCR - don't need full resolution
+            let maxDimension: CGFloat = 2000
+            let scale = min(1.0, maxDimension / max(pageRect.width, pageRect.height))
+            let thumbnailSize = CGSize(width: pageRect.width * scale, height: pageRect.height * scale)
+
+            // PDFPage.thumbnail is optimized and faster
+            let thumbnail = page.thumbnail(of: thumbnailSize, for: .mediaBox)
+            return CIImage(image: thumbnail)
+        }
+    }
+
+    /// Perform Vision framework OCR on an image
+    private static func performVisionOCR(on image: CIImage, language: OCRLanguage) async -> String? {
+        return await withCheckedContinuation { continuation in
+            let request = VNRecognizeTextRequest { request, error in
+                if let error = error {
+                    print("Vision OCR error: \(error)")
+                    continuation.resume(returning: nil)
+                    return
+                }
+
+                guard let observations = request.results as? [VNRecognizedTextObservation] else {
+                    continuation.resume(returning: nil)
+                    return
+                }
+
+                let recognizedText = observations.compactMap { observation in
+                    observation.topCandidates(1).first?.string
+                }.joined(separator: "\n")
+
+                continuation.resume(returning: recognizedText.isEmpty ? nil : recognizedText)
+            }
+
+            // Configure for accurate text recognition
+            request.recognitionLevel = .accurate
+            request.usesLanguageCorrection = true
+
+            // Set recognition languages based on selected language
+            request.recognitionLanguages = [language.rawValue]
+
+            let handler = VNImageRequestHandler(ciImage: image, options: [:])
+            do {
+                try handler.perform([request])
+            } catch {
+                print("Failed to perform Vision request: \(error)")
+                continuation.resume(returning: nil)
+            }
         }
     }
 
@@ -203,6 +411,7 @@ final class PDFImportService {
 enum PDFImportError: LocalizedError {
     case sourceFileNotFound
     case invalidFileType
+    case invalidPDF
     case bundleInUse
     case copyFailed
 
@@ -212,6 +421,8 @@ enum PDFImportError: LocalizedError {
             return "Source PDF file not found"
         case .invalidFileType:
             return "File is not a PDF"
+        case .invalidPDF:
+            return "PDF file is corrupted or unreadable"
         case .bundleInUse:
             return "Cannot delete bundle: still referenced by pages"
         case .copyFailed:

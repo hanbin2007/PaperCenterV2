@@ -39,7 +39,7 @@ struct PaperCenterV2App: App {
 
     var body: some Scene {
         WindowGroup {
-            PlaceholderView()
+            MainTabView()
         }
         .modelContainer(sharedModelContainer)
     }

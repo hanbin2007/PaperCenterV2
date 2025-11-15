@@ -21,6 +21,9 @@ final class PDFBundle {
     /// Unique identifier
     var id: UUID
 
+    /// User-defined name for this bundle (optional for migration compatibility)
+    var name: String?
+
     /// System-managed creation timestamp
     var createdAt: Date
 
@@ -44,6 +47,13 @@ final class PDFBundle {
     /// Key: page number (1-based), Value: extracted text
     var ocrTextByPage: [Int: String]
 
+    /// OCR extraction progress (0.0 to 1.0)
+    var ocrExtractionProgress: Double
+
+    /// OCR extraction status
+    /// Values: "notStarted", "inProgress", "completed", "failed"
+    var ocrExtractionStatus: String
+
     // MARK: - Relationships
 
     /// Inverse relationship to all Pages referencing this bundle
@@ -62,11 +72,13 @@ final class PDFBundle {
 
     init(
         id: UUID = UUID(),
+        name: String? = nil,
         displayPDFPath: String? = nil,
         ocrPDFPath: String? = nil,
         originalPDFPath: String? = nil
     ) {
         self.id = id
+        self.name = name
         self.createdAt = Date()
         self.updatedAt = Date()
         self.displayPDFPath = displayPDFPath
@@ -74,9 +86,16 @@ final class PDFBundle {
         self.originalPDFPath = originalPDFPath
         self.pageMapping = nil
         self.ocrTextByPage = [:]
+        self.ocrExtractionProgress = 0.0
+        self.ocrExtractionStatus = "notStarted"
     }
 
     // MARK: - Helper Methods
+
+    /// Display name with fallback
+    var displayName: String {
+        return name ?? "Untitled Bundle"
+    }
 
     /// Update the modification timestamp
     func touch() {
