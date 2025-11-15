@@ -47,7 +47,8 @@ final class MetadataFormattingService {
             return FormattedVariable(
                 name: variable.name,
                 value: value,
-                type: variable.type
+                type: variable.type,
+                color: variable.color
             )
         }.sorted { $0.name < $1.name }
     }
@@ -70,7 +71,8 @@ final class MetadataFormattingService {
             return FormattedVariable(
                 name: variable.name,
                 value: value,
-                type: variable.type
+                type: variable.type,
+                color: variable.color
             )
         }.sorted { $0.name < $1.name }
     }
@@ -93,7 +95,8 @@ final class MetadataFormattingService {
             return FormattedVariable(
                 name: variable.name,
                 value: value,
-                type: variable.type
+                type: variable.type,
+                color: variable.color
             )
         }.sorted { $0.name < $1.name }
     }
@@ -116,7 +119,8 @@ final class MetadataFormattingService {
             return FormattedVariable(
                 name: variable.name,
                 value: value,
-                type: variable.type
+                type: variable.type,
+                color: variable.color
             )
         }.sorted { $0.name < $1.name }
     }
@@ -130,4 +134,5 @@ struct FormattedVariable: Identifiable {
     let name: String
     let value: String
     let type: VariableType
+    let color: String
 }

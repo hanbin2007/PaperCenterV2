@@ -309,8 +309,10 @@ final class PDFImportService {
     }
 
     /// Render a PDF page to an image for Vision OCR (optimized for speed)
+    /// Runs on background thread to avoid blocking UI
     private static func renderPageToImageOnMain(_ page: PDFPage) async -> CIImage? {
-        await MainActor.run {
+        // PDFPage rendering is thread-safe, run on background thread
+        return await Task.detached(priority: .userInitiated) {
             // Use thumbnail method which is faster than full rendering
             let pageRect = page.bounds(for: .mediaBox)
             // Use reasonable size for OCR - don't need full resolution
@@ -321,44 +323,48 @@ final class PDFImportService {
             // PDFPage.thumbnail is optimized and faster
             let thumbnail = page.thumbnail(of: thumbnailSize, for: .mediaBox)
             return CIImage(image: thumbnail)
-        }
+        }.value
     }
 
     /// Perform Vision framework OCR on an image
+    /// Runs on background queue to avoid blocking UI
     private static func performVisionOCR(on image: CIImage, language: OCRLanguage) async -> String? {
         return await withCheckedContinuation { continuation in
-            let request = VNRecognizeTextRequest { request, error in
-                if let error = error {
-                    print("Vision OCR error: \(error)")
-                    continuation.resume(returning: nil)
-                    return
+            // Run Vision request on background queue
+            DispatchQueue.global(qos: .userInitiated).async {
+                let request = VNRecognizeTextRequest { request, error in
+                    if let error = error {
+                        print("Vision OCR error: \(error)")
+                        continuation.resume(returning: nil)
+                        return
+                    }
+
+                    guard let observations = request.results as? [VNRecognizedTextObservation] else {
+                        continuation.resume(returning: nil)
+                        return
+                    }
+
+                    let recognizedText = observations.compactMap { observation in
+                        observation.topCandidates(1).first?.string
+                    }.joined(separator: "\n")
+
+                    continuation.resume(returning: recognizedText.isEmpty ? nil : recognizedText)
                 }
 
-                guard let observations = request.results as? [VNRecognizedTextObservation] else {
+                // Configure for accurate text recognition
+                request.recognitionLevel = .accurate
+                request.usesLanguageCorrection = true
+
+                // Set recognition languages based on selected language
+                request.recognitionLanguages = [language.rawValue]
+
+                let handler = VNImageRequestHandler(ciImage: image, options: [:])
+                do {
+                    try handler.perform([request])
+                } catch {
+                    print("Failed to perform Vision request: \(error)")
                     continuation.resume(returning: nil)
-                    return
                 }
-
-                let recognizedText = observations.compactMap { observation in
-                    observation.topCandidates(1).first?.string
-                }.joined(separator: "\n")
-
-                continuation.resume(returning: recognizedText.isEmpty ? nil : recognizedText)
-            }
-
-            // Configure for accurate text recognition
-            request.recognitionLevel = .accurate
-            request.usesLanguageCorrection = true
-
-            // Set recognition languages based on selected language
-            request.recognitionLanguages = [language.rawValue]
-
-            let handler = VNImageRequestHandler(ciImage: image, options: [:])
-            do {
-                try handler.perform([request])
-            } catch {
-                print("Failed to perform Vision request: \(error)")
-                continuation.resume(returning: nil)
             }
         }
     }

@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(xcodebuild:*)"
+      "Bash(xcodebuild:*)",
+      "Bash(xargs basename:*)",
+      "Bash(tree:*)"
     ],
     "deny": [],
     "ask": []

@@ -21,6 +21,11 @@ struct MainTabView: View {
                     Label("Bundles", systemImage: "folder")
                 }
 
+            PropertiesManagementView()
+                .tabItem {
+                    Label("Properties", systemImage: "slider.horizontal.3")
+                }
+
             OCRDebugView()
                 .tabItem {
                     Label("OCR Debug", systemImage: "text.magnifyingglass")

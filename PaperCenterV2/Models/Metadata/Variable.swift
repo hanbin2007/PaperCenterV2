@@ -28,6 +28,9 @@ final class Variable {
     /// Scope defining which entity types can use this variable
     var scope: VariableScope
 
+    /// Hex color code for visual representation (e.g., "#3B82F6")
+    var color: String
+
     /// Predefined options for list type (nil for int type)
     /// Example: ["Easy", "Medium", "Hard"]
     var listOptions: [String]?
@@ -45,12 +48,14 @@ final class Variable {
         name: String,
         type: VariableType,
         scope: VariableScope = .all,
+        color: String = "#8B5CF6", // Default purple color
         listOptions: [String]? = nil
     ) {
         self.id = id
         self.name = name
         self.type = type
         self.scope = scope
+        self.color = color
         self.listOptions = listOptions
         self.createdAt = Date()
         self.updatedAt = Date()

@@ -17,6 +17,11 @@ struct VariableDisplayView: View {
             VStack(alignment: .leading, spacing: 4) {
                 ForEach(variables) { variable in
                     HStack(spacing: 4) {
+                        // Variable color indicator
+                        Circle()
+                            .fill(Color(hex: variable.color) ?? .purple)
+                            .frame(width: 8, height: 8)
+
                         // Variable name in bold
                         Text("\(variable.name):")
                             .font(.caption)
@@ -28,12 +33,12 @@ struct VariableDisplayView: View {
                             .font(.caption)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 3)
-                            .background(Color.blue.opacity(0.1))
-                            .foregroundColor(.blue)
+                            .background((Color(hex: variable.color) ?? .purple).opacity(0.1))
+                            .foregroundColor(Color(hex: variable.color) ?? .purple)
                             .clipShape(Capsule())
                             .overlay(
                                 Capsule()
-                                    .stroke(Color.blue.opacity(0.2), lineWidth: 0.5)
+                                    .stroke((Color(hex: variable.color) ?? .purple).opacity(0.2), lineWidth: 0.5)
                             )
                     }
                 }
