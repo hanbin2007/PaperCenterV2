@@ -156,3 +156,9 @@ final class Doc {
         return pageGroups?.isEmpty ?? true
     }
 }
+
+// MARK: - VariableHolder Conformance
+
+extension Doc: VariableHolder {
+    // Already has variableAssignments property
+}

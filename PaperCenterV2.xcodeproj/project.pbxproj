@@ -34,6 +34,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
+				Views/Components/Form/MetadataAssignmentExample.md,
 			);
 			target = FD5912482EC04242001644F9 /* PaperCenterV2 */;
 		};

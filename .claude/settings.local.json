@@ -1,13 +1,4 @@
 {
-  "permissions": {
-    "allow": [
-      "Bash(xcodebuild:*)",
-      "Bash(xargs basename:*)",
-      "Bash(tree:*)"
-    ],
-    "deny": [],
-    "ask": []
-  },
   "env": {
     "ANTHROPIC_BASE_URL": "https://api.moonshot.cn/anthropic",
     "ANTHROPIC_AUTH_TOKEN": "sk-fF2RSuXaay8lfcBADcDCizbPTVqUUhVQg770dHE5pWCkaJOH",
@@ -16,5 +7,15 @@
     "ANTHROPIC_DEFAULT_SONNET_MODEL": "kimi-k2-thinking-turbo",
     "ANTHROPIC_DEFAULT_HAIKU_MODEL": "kimi-k2-thinking-turbo",
     "CLAUDE_CODE_SUBAGENT_MODEL": "kimi-k2-thinking-turbo"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(xcodebuild:*)",
+      "Bash(xargs basename:*)",
+      "Bash(tree:*)",
+      "Bash(ls -la /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/{Form,Selection}/)"
+    ],
+    "deny": [],
+    "ask": []
   }
 }
