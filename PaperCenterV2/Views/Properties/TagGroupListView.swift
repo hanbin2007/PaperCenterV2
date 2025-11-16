@@ -18,21 +18,33 @@ struct TagGroupListView: View {
     @State private var isEditMode = false
     @State private var showingDeleteConfirmation = false
     @State private var tagGroupToEdit: TagGroup?
+    @State private var searchText = ""
 
     private var viewModel: PropertyManagementViewModel {
         PropertyManagementViewModel(modelContext: modelContext)
     }
 
+    private var filteredTagGroups: [TagGroup] {
+        if !searchText.isEmpty {
+            return tagGroups.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+        }
+        return tagGroups
+    }
+
     var body: some View {
         List(selection: $selectedTagGroups) {
-            if tagGroups.isEmpty {
+            if filteredTagGroups.isEmpty {
                 ContentUnavailableView {
                     Label("No Tag Groups", systemImage: "folder.badge.questionmark")
                 } description: {
-                    Text("Create a tag group to organize your tags")
+                    if searchText.isEmpty {
+                        Text("Create a tag group to organize your tags")
+                    } else {
+                        Text("No tag groups match '\(searchText)'")
+                    }
                 }
             } else {
-                ForEach(tagGroups) { tagGroup in
+                ForEach(filteredTagGroups) { tagGroup in
                     if isEditMode {
                         TagGroupRow(
                             tagGroup: tagGroup,
@@ -53,11 +65,9 @@ struct TagGroupListView: View {
                 }
             }
         }
-        .navigationDestination(for: TagGroup.self) { tagGroup in
-            TagGroupManagementView(tagGroup: tagGroup)
-        }
         .environment(\.editMode, isEditMode ? .constant(.active) : .constant(.inactive))
         .navigationTitle("Tag Groups")
+        .searchable(text: $searchText, prompt: "Search tag groups")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
@@ -115,7 +125,7 @@ struct TagGroupListView: View {
     }
 
     private func batchDelete() {
-        let groupsToDelete = tagGroups.filter { selectedTagGroups.contains($0.id) }
+        let groupsToDelete = filteredTagGroups.filter { selectedTagGroups.contains($0.id) }
         viewModel.batchDeleteTagGroups(groupsToDelete)
         selectedTagGroups.removeAll()
     }

@@ -49,7 +49,8 @@ struct PropertiesManagementView: View {
                     VariableManagementView()
                 }
             }
-            .navigationTitle("Properties")
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
         }
     }
 }
@@ -75,6 +76,9 @@ private struct TagManagementView: View {
             } else {
                 TagListView()
             }
+        }
+        .navigationDestination(for: TagGroup.self) { tagGroup in
+            TagGroupManagementView(tagGroup: tagGroup)
         }
     }
 }
