@@ -20,6 +20,7 @@ struct DocCreationView: View {
     @State private var selectedBundle: PDFBundle?
     @State private var errorMessage: String?
     @State private var creationService: DocCreationService?
+    @State private var assignmentViewModel: TagVariableAssignmentViewModel?
 
     init(bundle: PDFBundle? = nil) {
         self.bundle = bundle
@@ -48,6 +49,29 @@ struct DocCreationView: View {
                         Text("PDF Source")
                     } footer: {
                         Text("Choose which PDF bundle to use as the source for this document")
+                    }
+                }
+
+                if let assignmentViewModel {
+                    Section {
+                        TagVariableAssignmentView(
+                            viewModel: assignmentViewModel,
+                            layoutMode: .form
+                        )
+                    } header: {
+                        Text("Tags & Variables")
+                    } footer: {
+                        Text("Selections will be applied to the new document on create")
+                            .font(.caption)
+                    }
+
+                    Section {
+                        VariableValueSectionView(viewModel: assignmentViewModel)
+                    } header: {
+                        Text("Variable Values")
+                    } footer: {
+                        Text("Set values for the variables you selected above")
+                            .font(.caption)
                     }
                 }
 
@@ -80,6 +104,10 @@ struct DocCreationView: View {
                 if let bundle = bundle {
                     selectedBundle = bundle
                 }
+                assignmentViewModel = TagVariableAssignmentViewModel(
+                    modelContext: modelContext,
+                    entityType: .doc
+                )
             }
         }
     }
@@ -96,7 +124,10 @@ struct DocCreationView: View {
         }
 
         do {
-            let _ = try service.createDoc(from: bundle, title: title)
+            let createdDoc = try service.createDoc(from: bundle, title: title)
+            if let assignmentViewModel {
+                assignmentViewModel.applyPending(to: .doc(createdDoc))
+            }
             try modelContext.save()
             dismiss()
         } catch {

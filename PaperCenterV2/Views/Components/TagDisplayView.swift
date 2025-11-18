@@ -21,7 +21,7 @@ struct TagDisplayView: View {
         if !tags.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
                 ForEach(groupedTags, id: \.groupName) { group in
-                    HStack(alignment: .top, spacing: 4) {
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
                         // Group name in bold
                         Text("\(group.groupName):")
                             .font(.caption)
@@ -50,6 +50,7 @@ private struct TagCapsule: View {
             .font(.caption)
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
+            .frame(minHeight: 24, alignment: .center)
             .background(Color(hex: tag.color).opacity(0.15))
             .foregroundColor(Color(hex: tag.color))
             .clipShape(Capsule())
