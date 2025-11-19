@@ -28,6 +28,9 @@ final class Tag {
     /// Scope defining which entity types can use this tag
     var scope: TagScope
 
+    /// Manual order within its tag group (or global order when ungrouped)
+    var sortIndex: Int
+
     /// System-managed creation timestamp
     var createdAt: Date
 
@@ -67,12 +70,14 @@ final class Tag {
         name: String,
         color: String = "#3B82F6", // Default blue color
         scope: TagScope = .all,
-        tagGroup: TagGroup? = nil
+        tagGroup: TagGroup? = nil,
+        sortIndex: Int = 0
     ) {
         self.id = id
         self.name = name
         self.color = color
         self.scope = scope
+        self.sortIndex = sortIndex
         self.createdAt = Date()
         self.updatedAt = Date()
         self.tagGroup = tagGroup

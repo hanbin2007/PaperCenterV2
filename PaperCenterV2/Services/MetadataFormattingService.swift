@@ -17,14 +17,25 @@ final class MetadataFormattingService {
     /// - Parameter tags: Tags to group
     /// - Returns: Array of tuples with group name and tags
     static func groupTags(_ tags: [Tag]) -> [(groupName: String, tags: [Tag])] {
-        // Group tags by TagGroup
-        let grouped = Dictionary(grouping: tags) { tag in
-            tag.tagGroup?.name ?? "Other"
+        let orderedTags = tags.sortedByManualOrder()
+        var grouped: [(id: UUID?, name: String, tags: [Tag])] = []
+        var indexMap: [UUID?: Int] = [:]
+
+        for tag in orderedTags {
+            let key = tag.tagGroup?.id
+            if let index = indexMap[key] {
+                grouped[index].tags.append(tag)
+            } else {
+                indexMap[key] = grouped.count
+                grouped.append((
+                    id: key,
+                    name: tag.tagGroup?.name ?? "Other",
+                    tags: [tag]
+                ))
+            }
         }
 
-        // Sort by group name
-        return grouped.map { (groupName: $0.key, tags: $0.value) }
-            .sorted { $0.groupName < $1.groupName }
+        return grouped.map { (groupName: $0.name, tags: $0.tags) }
     }
 
     // MARK: - Variable Formatting

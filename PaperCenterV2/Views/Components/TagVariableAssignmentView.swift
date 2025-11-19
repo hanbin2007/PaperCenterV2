@@ -35,17 +35,23 @@ struct TagVariableAssignmentView: View {
         let filtered = viewModel.searchText.isEmpty
             ? viewModel.availableTags
             : viewModel.availableTags.filter { $0.name.localizedCaseInsensitiveContains(viewModel.searchText) }
-        var displays: [TagGroupDisplay] = viewModel.availableTagGroups.map { group in
-            let tags = filtered.filter { $0.tagGroup?.id == group.id }
-            return TagGroupDisplay(
-                id: group.id.uuidString,
-                title: group.name,
-                group: group,
-                tags: tags
-            )
-        }
+        var displays: [TagGroupDisplay] = viewModel.availableTagGroups
+            .sortedByManualOrder()
+            .map { group in
+                let tags = filtered
+                    .filter { $0.tagGroup?.id == group.id }
+                    .sortedByManualOrder()
+                return TagGroupDisplay(
+                    id: group.id.uuidString,
+                    title: group.name,
+                    group: group,
+                    tags: tags
+                )
+            }
 
-        let ungroupedTags = filtered.filter { $0.tagGroup == nil }
+        let ungroupedTags = filtered
+            .filter { $0.tagGroup == nil }
+            .sortedByManualOrder()
         displays.append(
             TagGroupDisplay(
                 id: "ungrouped",

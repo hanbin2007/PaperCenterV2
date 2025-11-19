@@ -22,6 +22,9 @@ final class TagGroup {
     /// Group name (e.g., "Subject", "Difficulty")
     var name: String
 
+    /// Manual sort index for user-defined ordering (lower values appear first)
+    var sortIndex: Int
+
     /// System-managed creation timestamp
     var createdAt: Date
 
@@ -38,10 +41,12 @@ final class TagGroup {
 
     init(
         id: UUID = UUID(),
-        name: String
+        name: String,
+        sortIndex: Int = 0
     ) {
         self.id = id
         self.name = name
+        self.sortIndex = sortIndex
         self.createdAt = Date()
         self.updatedAt = Date()
     }

@@ -1,0 +1,48 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -scheme PaperCenterV2 -destination "platform=iOS Simulator,name=iPhone 17 Pro" build
+
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (1 target)
+    Target 'PaperCenterV2' in project 'PaperCenterV2' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.0.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --print-asset-tag-combinations --output-format xml1 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Assets.xcassets
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/usr/bin/actool --version --output-format xml1
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+Build description signature: 09544cf4568549619c696a440219bbbb
+Build description path: /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/XCBuildData/09544cf4568549619c696a440219bbbb.xcbuilddata
+ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.0.sdk /Users/zhb/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphonesimulator26.0-23A339-26257891a6c027eb51374368541b8346.sdkstatcache
+    cd /Users/zhb/Documents/PaperCenterV2/PaperCenterV2.xcodeproj
+    /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.0.sdk -o /Users/zhb/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphonesimulator26.0-23A339-26257891a6c027eb51374368541b8346.sdkstatcache
+
+CopySwiftLibs /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator/PaperCenterV2.app (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    builtin-swiftStdLibTool --copy --verbose --sign - --scan-executable /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator/PaperCenterV2.app/PaperCenterV2.debug.dylib --scan-folder /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator/PaperCenterV2.app/Frameworks --scan-folder /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator/PaperCenterV2.app/PlugIns --scan-folder /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator/PaperCenterV2.app/SystemExtensions --scan-folder /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator/PaperCenterV2.app/Extensions --platform iphonesimulator --toolchain /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator/PaperCenterV2.app/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os
+
+ProcessInfoPlistFile /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator/PaperCenterV2.app/Info.plist /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Info.plist (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    builtin-infoPlistUtility /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Info.plist -producttype com.apple.product-type.application -genpkginfo /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator/PaperCenterV2.app/PkgInfo -expandbuildsettings -format binary -platform iphonesimulator -additionalcontentfile /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/assetcatalog_generated_info.plist -o /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator/PaperCenterV2.app/Info.plist
+
+** BUILD SUCCEEDED **
+

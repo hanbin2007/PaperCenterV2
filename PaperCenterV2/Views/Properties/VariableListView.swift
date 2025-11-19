@@ -11,7 +11,7 @@ import SwiftData
 struct VariableListView: View {
     @Environment(\.modelContext) private var modelContext
 
-    @Query(sort: \Variable.name) private var allVariables: [Variable]
+    @Query(sort: \Variable.sortIndex) private var allVariables: [Variable]
 
     @State private var showingCreateSheet = false
     @State private var selectedVariables: Set<UUID> = []
@@ -44,7 +44,7 @@ struct VariableListView: View {
             variables = variables.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
         }
 
-        return variables
+        return variables.sortedByManualOrder()
     }
 
     var body: some View {

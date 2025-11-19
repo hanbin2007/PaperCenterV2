@@ -321,18 +321,24 @@ final class PropertyManagementViewModel {
     // MARK: - Filtering
 
     private func filterTagGroups(_ tagGroups: [TagGroup]) -> [TagGroup] {
-        guard !searchQuery.isEmpty else { return tagGroups }
-        return tagGroups.filter { $0.name.localizedCaseInsensitiveContains(searchQuery) }
+        let filtered = searchQuery.isEmpty
+            ? tagGroups
+            : tagGroups.filter { $0.name.localizedCaseInsensitiveContains(searchQuery) }
+        return filtered.sortedByManualOrder()
     }
 
     private func filterTags(_ tags: [Tag]) -> [Tag] {
-        guard !searchQuery.isEmpty else { return tags }
-        return tags.filter { $0.name.localizedCaseInsensitiveContains(searchQuery) }
+        let filtered = searchQuery.isEmpty
+            ? tags
+            : tags.filter { $0.name.localizedCaseInsensitiveContains(searchQuery) }
+        return filtered.sortedByManualOrder()
     }
 
     private func filterVariables(_ variables: [Variable]) -> [Variable] {
-        guard !searchQuery.isEmpty else { return variables }
-        return variables.filter { $0.name.localizedCaseInsensitiveContains(searchQuery) }
+        let filtered = searchQuery.isEmpty
+            ? variables
+            : variables.filter { $0.name.localizedCaseInsensitiveContains(searchQuery) }
+        return filtered.sortedByManualOrder()
     }
 
     // MARK: - Helper Methods

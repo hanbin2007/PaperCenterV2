@@ -11,7 +11,7 @@ import SwiftData
 struct TagListView: View {
     @Environment(\.modelContext) private var modelContext
 
-    @Query(sort: \Tag.name) private var allTags: [Tag]
+    @Query(sort: \Tag.sortIndex) private var allTags: [Tag]
 
     // Optional filter by tag group
     let filterTagGroup: TagGroup?
@@ -47,7 +47,7 @@ struct TagListView: View {
             tags = tags.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
         }
 
-        return tags
+        return tags.sortedByManualOrder()
     }
 
     init(filterTagGroup: TagGroup? = nil) {

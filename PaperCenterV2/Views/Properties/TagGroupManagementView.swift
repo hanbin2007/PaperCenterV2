@@ -13,7 +13,7 @@ struct TagGroupManagementView: View {
 
     let tagGroup: TagGroup
 
-    @Query(sort: \Tag.name) private var allTags: [Tag]
+    @Query(sort: \Tag.sortIndex) private var allTags: [Tag]
 
     @State private var showingCreateSheet = false
     @State private var selectedTags: Set<UUID> = []
@@ -29,12 +29,10 @@ struct TagGroupManagementView: View {
 
     private var filteredTags: [Tag] {
         let groupTags = allTags.filter { $0.tagGroup?.id == tagGroup.id }
-
-        if !searchText.isEmpty {
-            return groupTags.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
-        }
-
-        return groupTags
+        let filtered = searchText.isEmpty
+            ? groupTags
+            : groupTags.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+        return filtered.sortedByManualOrder()
     }
 
     var body: some View {

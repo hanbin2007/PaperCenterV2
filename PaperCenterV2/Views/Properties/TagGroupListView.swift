@@ -11,7 +11,7 @@ import SwiftData
 struct TagGroupListView: View {
     @Environment(\.modelContext) private var modelContext
 
-    @Query(sort: \TagGroup.name) private var tagGroups: [TagGroup]
+    @Query(sort: \TagGroup.sortIndex) private var tagGroups: [TagGroup]
 
     @State private var showingCreateSheet = false
     @State private var selectedTagGroups: Set<UUID> = []
@@ -25,10 +25,10 @@ struct TagGroupListView: View {
     }
 
     private var filteredTagGroups: [TagGroup] {
-        if !searchText.isEmpty {
-            return tagGroups.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
-        }
-        return tagGroups
+        let base = searchText.isEmpty
+            ? tagGroups
+            : tagGroups.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+        return base.sortedByManualOrder()
     }
 
     var body: some View {

@@ -82,16 +82,20 @@ final class TagVariableAssignmentViewModel {
 
     private func loadAvailable() {
         do {
-            let tagDescriptor = FetchDescriptor<Tag>(sortBy: [SortDescriptor(\.name)])
-            let variableDescriptor = FetchDescriptor<Variable>(sortBy: [SortDescriptor(\.name)])
+            let tagDescriptor = FetchDescriptor<Tag>()
+            let variableDescriptor = FetchDescriptor<Variable>()
 
             let tags = try modelContext.fetch(tagDescriptor)
             let variables = try modelContext.fetch(variableDescriptor)
-            availableTagGroups = try propertyService.fetchAllTagGroups()
+            availableTagGroups = (try propertyService.fetchAllTagGroups()).sortedByManualOrder()
 
             // Enforce scope visibility
-            availableTags = tags.filter { $0.scope.canTag(entityType) }
-            availableVariables = variables.filter { $0.scope.canApplyTo(entityType.toVariableEntityType) }
+            availableTags = tags
+                .filter { $0.scope.canTag(entityType) }
+                .sortedByManualOrder()
+            availableVariables = variables
+                .filter { $0.scope.canApplyTo(entityType.toVariableEntityType) }
+                .sortedByManualOrder()
         } catch {
             errorMessage = "Failed to load tags/variables: \(error.localizedDescription)"
         }
@@ -243,7 +247,7 @@ final class TagVariableAssignmentViewModel {
         do {
             let created = try propertyService.createTagGroup(name: trimmed)
             availableTagGroups.append(created)
-            availableTagGroups.sort { $0.name < $1.name }
+            availableTagGroups = availableTagGroups.sortedByManualOrder()
             statusMessage = "Tag group '\(trimmed)' added"
             return true
         } catch {
@@ -273,7 +277,7 @@ final class TagVariableAssignmentViewModel {
                 tagGroup: group
             )
             availableTags.append(created)
-            availableTags.sort { $0.name < $1.name }
+            availableTags = availableTags.sortedByManualOrder()
             selectedTagIDs.insert(created.id)
             if let target {
                 switch target {

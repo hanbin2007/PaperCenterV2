@@ -15,7 +15,7 @@ struct TagEditView: View {
     let tag: Tag? // nil for create, non-nil for edit
     let defaultTagGroup: TagGroup?
 
-    @Query(sort: \TagGroup.name) private var tagGroups: [TagGroup]
+    @Query(sort: \TagGroup.sortIndex) private var tagGroups: [TagGroup]
 
     @State private var name: String = ""
     @State private var color: String = "#3B82F6"
@@ -50,7 +50,7 @@ struct TagEditView: View {
                             Text("None")
                                 .tag(nil as TagGroup?)
 
-                            ForEach(tagGroups) { group in
+                            ForEach(tagGroups.sortedByManualOrder()) { group in
                                 Text(group.name)
                                     .tag(group as TagGroup?)
                             }

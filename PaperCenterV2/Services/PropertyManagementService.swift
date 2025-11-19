@@ -51,10 +51,9 @@ final class PropertyManagementService {
 
     /// Fetch all tag groups
     func fetchAllTagGroups() throws -> [TagGroup] {
-        let descriptor = FetchDescriptor<TagGroup>(
-            sortBy: [SortDescriptor(\.name)]
-        )
-        return try modelContext.fetch(descriptor)
+        let descriptor = FetchDescriptor<TagGroup>()
+        let groups = try modelContext.fetch(descriptor)
+        return groups.sortedByManualOrder()
     }
 
     /// Fetch a specific tag group by ID
@@ -70,7 +69,8 @@ final class PropertyManagementService {
         // Validate name uniqueness
         try validateTagGroupNameUnique(name)
 
-        let tagGroup = TagGroup(name: name)
+        let sortIndex = try nextTagGroupSortIndex()
+        let tagGroup = TagGroup(name: name, sortIndex: sortIndex)
         modelContext.insert(tagGroup)
         try modelContext.save()
         return tagGroup
@@ -122,24 +122,23 @@ final class PropertyManagementService {
 
     /// Fetch all tags
     func fetchAllTags() throws -> [Tag] {
-        let descriptor = FetchDescriptor<Tag>(
-            sortBy: [SortDescriptor(\.name)]
-        )
-        return try modelContext.fetch(descriptor)
+        let descriptor = FetchDescriptor<Tag>()
+        let tags = try modelContext.fetch(descriptor)
+        return tags.sortedByManualOrder()
     }
 
     /// Fetch tags by scope
     func fetchTags(byScope scope: TagScope) throws -> [Tag] {
         let descriptor = FetchDescriptor<Tag>(
-            predicate: #Predicate { $0.scope == scope },
-            sortBy: [SortDescriptor(\.name)]
+            predicate: #Predicate { $0.scope == scope }
         )
-        return try modelContext.fetch(descriptor)
+        let tags = try modelContext.fetch(descriptor)
+        return tags.sortedByManualOrder()
     }
 
     /// Fetch tags by tag group
     func fetchTags(byGroup tagGroup: TagGroup) throws -> [Tag] {
-        return tagGroup.tags ?? []
+        return (tagGroup.tags ?? []).sortedByManualOrder()
     }
 
     /// Fetch a specific tag by ID
@@ -163,11 +162,13 @@ final class PropertyManagementService {
         // Validate color format
         try validateHexColor(color)
 
+        let sortIndex = try nextTagSortIndex(in: tagGroup)
         let tag = Tag(
             name: name,
             color: color,
             scope: scope,
-            tagGroup: tagGroup
+            tagGroup: tagGroup,
+            sortIndex: sortIndex
         )
 
         modelContext.insert(tag)
@@ -200,7 +201,15 @@ final class PropertyManagementService {
         }
 
         if let tagGroup = tagGroup {
+            let movedToDifferentGroup = tag.tagGroup?.id != tagGroup.id
             tag.tagGroup = tagGroup
+            if movedToDifferentGroup {
+                tag.sortIndex = try nextTagSortIndex(in: tagGroup)
+            }
+        } else if tag.tagGroup != nil {
+            // Moving to ungrouped bucket, append to the end there
+            tag.tagGroup = nil
+            tag.sortIndex = try nextTagSortIndex(in: nil)
         }
 
         tag.touch()
@@ -246,6 +255,7 @@ final class PropertyManagementService {
 
         var createdTags: [Tag] = []
 
+        var nextIndex = try nextTagSortIndex(in: tagGroup)
         for name in names {
             // Skip duplicates silently
             if (try? validateTagNameUnique(name)) != nil {
@@ -253,8 +263,10 @@ final class PropertyManagementService {
                     name: name,
                     color: color,
                     scope: scope,
-                    tagGroup: tagGroup
+                    tagGroup: tagGroup,
+                    sortIndex: nextIndex
                 )
+                nextIndex += 1
                 modelContext.insert(tag)
                 createdTags.append(tag)
             }
@@ -268,28 +280,27 @@ final class PropertyManagementService {
 
     /// Fetch all variables
     func fetchAllVariables() throws -> [Variable] {
-        let descriptor = FetchDescriptor<Variable>(
-            sortBy: [SortDescriptor(\.name)]
-        )
-        return try modelContext.fetch(descriptor)
+        let descriptor = FetchDescriptor<Variable>()
+        let variables = try modelContext.fetch(descriptor)
+        return variables.sortedByManualOrder()
     }
 
     /// Fetch variables by scope
     func fetchVariables(byScope scope: VariableScope) throws -> [Variable] {
         let descriptor = FetchDescriptor<Variable>(
-            predicate: #Predicate { $0.scope == scope },
-            sortBy: [SortDescriptor(\.name)]
+            predicate: #Predicate { $0.scope == scope }
         )
-        return try modelContext.fetch(descriptor)
+        let variables = try modelContext.fetch(descriptor)
+        return variables.sortedByManualOrder()
     }
 
     /// Fetch variables by type
     func fetchVariables(byType type: VariableType) throws -> [Variable] {
         let descriptor = FetchDescriptor<Variable>(
-            predicate: #Predicate { $0.type == type },
-            sortBy: [SortDescriptor(\.name)]
+            predicate: #Predicate { $0.type == type }
         )
-        return try modelContext.fetch(descriptor)
+        let variables = try modelContext.fetch(descriptor)
+        return variables.sortedByManualOrder()
     }
 
     /// Fetch a specific variable by ID
@@ -319,11 +330,13 @@ final class PropertyManagementService {
             try validateListOptions(listOptions)
         }
 
+        let sortIndex = try nextVariableSortIndex()
         let variable = Variable(
             name: name,
             type: type,
             scope: scope,
             color: color,
+            sortIndex: sortIndex,
             listOptions: listOptions
         )
 
@@ -397,6 +410,36 @@ final class PropertyManagementService {
         if !errors.isEmpty {
             print("Batch delete completed with errors: \(errors.joined(separator: ", "))")
         }
+    }
+
+    // MARK: - Ordering Helpers
+
+    private func nextTagGroupSortIndex() throws -> Int {
+        let groups = try modelContext.fetch(FetchDescriptor<TagGroup>())
+        let maxIndex = groups.map(\.sortIndex).max() ?? -1
+        return maxIndex + 1
+    }
+
+    private func nextTagSortIndex(in tagGroup: TagGroup?) throws -> Int {
+        if let tagGroup {
+            let tags = tagGroup.tags ?? []
+            let maxIndex = tags.map(\.sortIndex).max() ?? -1
+            return maxIndex + 1
+        } else {
+            let ungrouped = try modelContext.fetch(
+                FetchDescriptor<Tag>(
+                    predicate: #Predicate { $0.tagGroup == nil }
+                )
+            )
+            let maxIndex = ungrouped.map(\.sortIndex).max() ?? -1
+            return maxIndex + 1
+        }
+    }
+
+    private func nextVariableSortIndex() throws -> Int {
+        let variables = try modelContext.fetch(FetchDescriptor<Variable>())
+        let maxIndex = variables.map(\.sortIndex).max() ?? -1
+        return maxIndex + 1
     }
 
     // MARK: - Validation Helpers
