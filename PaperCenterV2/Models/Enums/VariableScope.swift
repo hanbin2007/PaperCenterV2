@@ -13,6 +13,7 @@ enum VariableScope: String, Codable, CaseIterable {
     case doc = "doc"
     case pageGroup = "pageGroup"
     case page = "page"
+    case noteBlock = "noteBlock"
     case all = "all"
 
     /// Check if this scope allows this variable on the given entity type
@@ -26,6 +27,8 @@ enum VariableScope: String, Codable, CaseIterable {
             return entityType == .pageGroup
         case .page:
             return entityType == .page
+        case .noteBlock:
+            return entityType == .noteBlock
         case .all:
             return true
         }
@@ -38,4 +41,5 @@ enum VariableEntityType {
     case doc
     case pageGroup
     case page
+    case noteBlock
 }

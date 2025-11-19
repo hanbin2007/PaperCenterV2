@@ -46,6 +46,8 @@ extension TagScope {
             return "Page Group"
         case .page:
             return "Page"
+        case .noteBlock:
+            return "Note Block"
         case .docAndBelow:
             return "Doc & Below"
         case .all:
@@ -63,6 +65,8 @@ extension TagScope {
             return "rectangle.stack"
         case .page:
             return "doc.plaintext"
+        case .noteBlock:
+            return "text.badge.plus"
         case .docAndBelow:
             return "chart.bar.yaxis"
         case .all:
@@ -82,6 +86,8 @@ extension VariableScope {
             return "Page Group"
         case .page:
             return "Page"
+        case .noteBlock:
+            return "Note Block"
         case .all:
             return "All Entities"
         }
@@ -97,6 +103,8 @@ extension VariableScope {
             return "rectangle.stack"
         case .page:
             return "doc.plaintext"
+        case .noteBlock:
+            return "text.badge.plus"
         case .all:
             return "square.stack.3d.up"
         }

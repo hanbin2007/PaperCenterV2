@@ -13,6 +13,7 @@ enum TagScope: String, Codable, CaseIterable {
     case doc = "doc"
     case pageGroup = "pageGroup"
     case page = "page"
+    case noteBlock = "noteBlock"
     case docAndBelow = "docAndBelow"  // Doc, PageGroup, Page
     case all = "all"                   // All entities
 
@@ -27,6 +28,8 @@ enum TagScope: String, Codable, CaseIterable {
             return entityType == .pageGroup
         case .page:
             return entityType == .page
+        case .noteBlock:
+            return entityType == .noteBlock
         case .docAndBelow:
             return entityType == .doc || entityType == .pageGroup || entityType == .page
         case .all:
@@ -41,4 +44,5 @@ enum TaggableEntityType {
     case doc
     case pageGroup
     case page
+    case noteBlock
 }

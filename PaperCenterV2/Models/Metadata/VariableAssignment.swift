@@ -171,3 +171,44 @@ final class PageVariableAssignment {
         self.createdAt = Date()
     }
 }
+
+// MARK: - NoteBlock Variable Assignment
+
+/// Assignment of a variable value to a NoteBlock
+@Model
+final class NoteBlockVariableAssignment {
+    /// Unique identifier
+    var id: UUID
+
+    /// The variable being assigned
+    @Relationship(deleteRule: .nullify)
+    var variable: Variable?
+
+    /// The NoteBlock this assignment belongs to
+    @Relationship(deleteRule: .nullify)
+    var noteBlock: NoteBlock?
+
+    /// Integer value (for int type variables)
+    var intValue: Int?
+
+    /// List selection (for list type variables)
+    var listValue: String?
+
+    /// System-managed creation timestamp
+    var createdAt: Date
+
+    init(
+        id: UUID = UUID(),
+        variable: Variable,
+        noteBlock: NoteBlock,
+        intValue: Int? = nil,
+        listValue: String? = nil
+    ) {
+        self.id = id
+        self.variable = variable
+        self.noteBlock = noteBlock
+        self.intValue = intValue
+        self.listValue = listValue
+        self.createdAt = Date()
+    }
+}

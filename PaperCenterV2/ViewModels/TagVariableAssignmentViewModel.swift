@@ -411,6 +411,8 @@ private extension TaggableEntityType {
             return .pageGroup
         case .page:
             return .page
+        case .noteBlock:
+            return .noteBlock
         }
     }
 }

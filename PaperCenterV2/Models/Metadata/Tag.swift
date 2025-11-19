@@ -56,6 +56,10 @@ final class Tag {
     @Relationship(inverse: \Page.tags)
     var pages: [Page]?
 
+    /// NoteBlocks tagged with this tag
+    @Relationship(inverse: \NoteBlock.tags)
+    var noteBlocks: [NoteBlock]?
+
     // MARK: - Initialization
 
     init(
