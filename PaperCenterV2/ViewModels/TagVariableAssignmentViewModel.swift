@@ -45,6 +45,7 @@ final class TagVariableAssignmentViewModel {
 
     var availableTags: [Tag] = []
     var availableVariables: [Variable] = []
+    var availableTagGroups: [TagGroup] = []
 
     var selectedTagIDs: Set<UUID> = []
     var selectedVariableIDs: Set<UUID> = []
@@ -58,6 +59,7 @@ final class TagVariableAssignmentViewModel {
     // MARK: - Private
 
     private let modelContext: ModelContext
+    private let propertyService: PropertyManagementService
     private(set) var target: Target?
 
     // MARK: - Initialization
@@ -65,6 +67,7 @@ final class TagVariableAssignmentViewModel {
     init(modelContext: ModelContext, entityType: TaggableEntityType, target: Target? = nil) {
         self.modelContext = modelContext
         self.entityType = entityType
+        self.propertyService = PropertyManagementService(modelContext: modelContext)
         self.target = target
         loadAvailable()
         syncFromTarget()
@@ -84,6 +87,7 @@ final class TagVariableAssignmentViewModel {
 
             let tags = try modelContext.fetch(tagDescriptor)
             let variables = try modelContext.fetch(variableDescriptor)
+            availableTagGroups = try propertyService.fetchAllTagGroups()
 
             // Enforce scope visibility
             availableTags = tags.filter { $0.scope.canTag(entityType) }
@@ -223,6 +227,74 @@ final class TagVariableAssignmentViewModel {
             errorMessage = "Failed to save tag: \(error.localizedDescription)"
         }
         isSaving = false
+    }
+
+    @discardableResult
+    func quickCreateTagGroup(name: String) -> Bool {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            errorMessage = "Tag group name cannot be empty"
+            return false
+        }
+
+        isSaving = true
+        defer { isSaving = false }
+
+        do {
+            let created = try propertyService.createTagGroup(name: trimmed)
+            availableTagGroups.append(created)
+            availableTagGroups.sort { $0.name < $1.name }
+            statusMessage = "Tag group '\(trimmed)' added"
+            return true
+        } catch {
+            errorMessage = "Failed to create tag group: \(error.localizedDescription)"
+            return false
+        }
+    }
+
+    @discardableResult
+    func quickCreateTag(name: String, in group: TagGroup?) -> Bool {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            errorMessage = "Tag name cannot be empty"
+            return false
+        }
+
+        isSaving = true
+        defer { isSaving = false }
+
+        do {
+            let scope = tagScope(for: entityType)
+            let color = Self.randomTagColor()
+            let created = try propertyService.createTag(
+                name: trimmed,
+                color: color,
+                scope: scope,
+                tagGroup: group
+            )
+            availableTags.append(created)
+            availableTags.sort { $0.name < $1.name }
+            selectedTagIDs.insert(created.id)
+            if let target {
+                switch target {
+                case .doc(let doc):
+                    add(tag: created, to: &doc.tags)
+                    doc.touch()
+                case .pdfBundle(let bundle):
+                    add(tag: created, to: &bundle.tags)
+                case .pageGroup(let group):
+                    add(tag: created, to: &group.tags)
+                case .page(let page):
+                    add(tag: created, to: &page.tags)
+                }
+                try modelContext.save()
+            }
+            statusMessage = "Tag '\(trimmed)' added"
+            return true
+        } catch {
+            errorMessage = "Failed to create tag: \(error.localizedDescription)"
+            return false
+        }
     }
 
     func toggleVariableSelection(_ variable: Variable) {
@@ -397,6 +469,29 @@ final class TagVariableAssignmentViewModel {
         case .page(let page):
             page.variableAssignments?.removeAll { $0.variable?.id == variable.id }
         }
+    }
+
+    private func tagScope(for entity: TaggableEntityType) -> TagScope {
+        switch entity {
+        case .pdfBundle:
+            return .pdfBundle
+        case .doc:
+            return .doc
+        case .pageGroup:
+            return .pageGroup
+        case .page:
+            return .page
+        case .noteBlock:
+            return .noteBlock
+        }
+    }
+
+    private static func randomTagColor() -> String {
+        let palette = [
+            "#3B82F6", "#6366F1", "#A855F7", "#EC4899",
+            "#F97316", "#10B981", "#14B8A6", "#F43F5E"
+        ]
+        return palette.randomElement() ?? "#3B82F6"
     }
 }
 

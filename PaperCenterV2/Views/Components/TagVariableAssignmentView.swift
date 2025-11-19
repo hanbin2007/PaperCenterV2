@@ -5,22 +5,56 @@
 //  Inline tag & variable selector with capsule grid styling.
 //
 
+import SwiftData
 import SwiftUI
 
 struct TagVariableAssignmentView: View {
     @Bindable var viewModel: TagVariableAssignmentViewModel
     let layoutMode: LayoutMode
+    @Environment(\.modelContext) private var modelContext
+
+    @State private var showAddTagGroupPopover = false
+    @State private var newTagGroupName = ""
+    @State private var newTagNames: [String: String] = [:]
+    @State private var showAddVariableSheet = false
+    @State private var propertyViewModel: PropertyManagementViewModel?
 
     enum LayoutMode {
         case form
         case sheet
     }
 
-    private var groupedTags: [(groupName: String, tags: [Tag])] {
+    private struct TagGroupDisplay: Identifiable {
+        let id: String
+        let title: String
+        let group: TagGroup?
+        let tags: [Tag]
+    }
+
+    private var groupedTags: [TagGroupDisplay] {
         let filtered = viewModel.searchText.isEmpty
             ? viewModel.availableTags
             : viewModel.availableTags.filter { $0.name.localizedCaseInsensitiveContains(viewModel.searchText) }
-        return MetadataFormattingService.groupTags(filtered)
+        var displays: [TagGroupDisplay] = viewModel.availableTagGroups.map { group in
+            let tags = filtered.filter { $0.tagGroup?.id == group.id }
+            return TagGroupDisplay(
+                id: group.id.uuidString,
+                title: group.name,
+                group: group,
+                tags: tags
+            )
+        }
+
+        let ungroupedTags = filtered.filter { $0.tagGroup == nil }
+        displays.append(
+            TagGroupDisplay(
+                id: "ungrouped",
+                title: "Other",
+                group: nil,
+                tags: ungroupedTags
+            )
+        )
+        return displays
     }
 
     private var filteredVariables: [Variable] {
@@ -34,13 +68,32 @@ struct TagVariableAssignmentView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             searchField
-            Section(header: sectionHeader("Tag Settings")) {
+            Section(header: tagSectionHeader) {
                 tagsSection
             }
-            Section(header: sectionHeader("Variable Settings")) {
+            Section(header: variableSectionHeader) {
                 variableSelectionSection
             }
             statusRow
+        }
+        .sheet(isPresented: $showAddVariableSheet, onDismiss: {
+            viewModel.refresh()
+        }) {
+            if let propertyViewModel {
+                VariableEditView(viewModel: propertyViewModel, variable: nil)
+                    .modelContext(modelContext)
+            } else {
+                ProgressView()
+                    .padding()
+                    .onAppear {
+                        propertyViewModel = PropertyManagementViewModel(modelContext: modelContext)
+                    }
+            }
+        }
+        .onAppear {
+            if propertyViewModel == nil {
+                propertyViewModel = PropertyManagementViewModel(modelContext: modelContext)
+            }
         }
     }
 
@@ -55,14 +108,16 @@ struct TagVariableAssignmentView: View {
                 contentUnavailable(message: "No tags in scope")
             } else {
                 VStack(alignment: .leading, spacing: 8) {
-//                    header(title: "Tags")
                     VStack(alignment: .leading, spacing: 12) {
-                        ForEach(groupedTags, id: \.groupName) { group in
+                        ForEach(groupedTags) { group in
                             VStack(alignment: .leading, spacing: 6) {
-                                Text(group.groupName)
-                                    .font(.subheadline)
-                                    .fontWeight(.semibold)
-                                    .foregroundStyle(.primary)
+                                HStack {
+                                    Text(group.title)
+                                        .font(.subheadline)
+                                        .fontWeight(.semibold)
+                                        .foregroundStyle(.primary)
+                                    Spacer()
+                                }
                                 FlowLayout(spacing: 8) {
                                     ForEach(group.tags) { tag in
                                         TagCapsule(
@@ -71,6 +126,21 @@ struct TagVariableAssignmentView: View {
                                             action: { viewModel.toggleTag(tag) }
                                         )
                                     }
+                                    AddTagChip(
+                                        text: Binding(
+                                            get: { newTagNames[tagEntryKey(for: group.group), default: ""] },
+                                            set: { newTagNames[tagEntryKey(for: group.group)] = $0 }
+                                        ),
+                                        placeholder: "Add tag"
+                                    ) {
+                                        attemptCreateTag(for: group.group)
+                                    }
+                                }
+                                if group.tags.isEmpty && !viewModel.searchText.isEmpty {
+                                    Text("No matches in this group")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                        .padding(.leading, 2)
                                 }
                             }
                         }
@@ -122,6 +192,53 @@ struct TagVariableAssignmentView: View {
         .padding(.top, 4)
     }
 
+    private var tagSectionHeader: some View {
+        HStack {
+            Text("Tag Settings")
+                .font(.headline)
+                .foregroundStyle(.primary)
+            Spacer()
+            Button {
+                newTagGroupName = ""
+                showAddTagGroupPopover = true
+            } label: {
+                Label("Add Tag Group", systemImage: "plus.circle")
+            }
+            .buttonStyle(.plain)
+            .popover(isPresented: $showAddTagGroupPopover, arrowEdge: .top) {
+                TagGroupQuickAddPopover(
+                    name: $newTagGroupName,
+                    onCancel: {
+                        showAddTagGroupPopover = false
+                    },
+                    onCreate: {
+                        if viewModel.quickCreateTagGroup(name: newTagGroupName) {
+                            newTagGroupName = ""
+                            showAddTagGroupPopover = false
+                        }
+                    }
+                )
+            }
+        }
+    }
+
+    private var variableSectionHeader: some View {
+        HStack {
+            Text("Variable Settings")
+                .font(.headline)
+                .foregroundStyle(.primary)
+            Spacer()
+            if propertyViewModel != nil {
+                Button {
+                    showAddVariableSheet = true
+                } label: {
+                    Label("Add Variable", systemImage: "plus.circle")
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
     private func header(title: String) -> some View {
         HStack {
             Text(title)
@@ -150,6 +267,19 @@ struct TagVariableAssignmentView: View {
         Text(title)
             .font(.headline)
             .foregroundStyle(.primary)
+    }
+
+    private func attemptCreateTag(for group: TagGroup?) {
+        let key = tagEntryKey(for: group)
+        let name = newTagNames[key, default: ""].trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return }
+        if viewModel.quickCreateTag(name: name, in: group) {
+            newTagNames[key] = ""
+        }
+    }
+
+    private func tagEntryKey(for group: TagGroup?) -> String {
+        group?.id.uuidString ?? "ungrouped"
     }
 }
 
@@ -246,6 +376,38 @@ private struct TagCapsule: View {
             .clipShape(Capsule())
         }
         .buttonStyle(.plain)
+    }
+}
+
+private struct AddTagChip: View {
+    @Binding var text: String
+    let placeholder: String
+    let onCommit: () -> Void
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "plus.circle")
+            TextField(placeholder, text: $text)
+                .textFieldStyle(.plain)
+                .submitLabel(.done)
+                .onSubmit(onCommit)
+            if !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                Button {
+                    onCommit()
+                } label: {
+                    Image(systemName: "arrow.up.circle.fill")
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(.thinMaterial)
+        .overlay(
+            Capsule()
+                .stroke(.tertiary, lineWidth: 1)
+        )
+        .clipShape(Capsule())
     }
 }
 
@@ -438,5 +600,32 @@ private struct FlowLayout: Layout {
 
             self.size = CGSize(width: maxWidth, height: currentY + lineHeight)
         }
+    }
+}
+
+// MARK: - Quick Add Popover
+
+private struct TagGroupQuickAddPopover: View {
+    @Binding var name: String
+    let onCancel: () -> Void
+    let onCreate: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("New Tag Group")
+                .font(.headline)
+            TextField("Group Name", text: $name)
+                .textFieldStyle(.roundedBorder)
+            HStack {
+                Spacer()
+                Button("Cancel", action: onCancel)
+                Button("Add") {
+                    onCreate()
+                }
+                .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
+        .padding()
+        .frame(width: 260)
     }
 }
