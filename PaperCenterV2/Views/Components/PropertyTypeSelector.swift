@@ -30,6 +30,10 @@ extension VariableType {
             return "Integer"
         case .list:
             return "List"
+        case .text:
+            return "Text"
+        case .date:
+            return "Date"
         }
     }
 
@@ -39,6 +43,10 @@ extension VariableType {
             return "number"
         case .list:
             return "list.bullet"
+        case .text:
+            return "character.cursor.ibeam"
+        case .date:
+            return "calendar"
         }
     }
 
@@ -48,6 +56,10 @@ extension VariableType {
             return "A whole number value"
         case .list:
             return "A single selection from predefined options"
+        case .text:
+            return "Free-form text entry"
+        case .date:
+            return "A calendar date without time"
         }
     }
 }

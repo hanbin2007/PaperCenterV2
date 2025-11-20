@@ -9,6 +9,8 @@ import Foundation
 
 /// Defines the data type of a Variable
 enum VariableType: String, Codable, CaseIterable {
-    case int = "int"      // Integer value
-    case list = "list"    // Single choice from predefined options
+    case int = "int"       // Integer value
+    case list = "list"     // Single choice from predefined options
+    case text = "text"     // Free-form text
+    case date = "date"     // Calendar date
 }

@@ -66,7 +66,9 @@ final class PageVersion {
                 VariableAssignmentSnapshot(
                     variableID: assignment.variable?.id ?? UUID(),
                     intValue: assignment.intValue,
-                    listValue: assignment.listValue
+                    listValue: assignment.listValue,
+                    textValue: assignment.textValue,
+                    dateValue: assignment.dateValue
                 )
             } ?? []
         )
@@ -101,4 +103,10 @@ struct VariableAssignmentSnapshot: Codable {
 
     /// List selection (for list type)
     let listValue: String?
+
+    /// Text value (for text type)
+    let textValue: String?
+
+    /// Date value (for date type)
+    let dateValue: Date?
 }

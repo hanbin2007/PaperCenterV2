@@ -308,13 +308,21 @@ struct VariableValueSectionView: View {
         viewModel.availableVariables.filter { $0.type == .int && viewModel.selectedVariableIDs.contains($0.id) }
     }
 
+    private var selectedText: [Variable] {
+        viewModel.availableVariables.filter { $0.type == .text && viewModel.selectedVariableIDs.contains($0.id) }
+    }
+
+    private var selectedDate: [Variable] {
+        viewModel.availableVariables.filter { $0.type == .date && viewModel.selectedVariableIDs.contains($0.id) }
+    }
+
     private var adaptiveColumns: [GridItem] {
         [GridItem(.adaptive(minimum: 220, maximum: 280), spacing: 12)]
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            if selectedList.isEmpty && selectedInt.isEmpty {
+            if selectedList.isEmpty && selectedInt.isEmpty && selectedText.isEmpty && selectedDate.isEmpty {
                 HStack(spacing: 8) {
                     Image(systemName: "info.circle")
                         .foregroundStyle(.secondary)
@@ -352,6 +360,38 @@ struct VariableValueSectionView: View {
                             value: viewModel.variableValues[variable.id]?.intValue,
                             onChange: { newValue in
                                 viewModel.updateVariable(variable, intValue: newValue)
+                            }
+                        )
+                    }
+                }
+            }
+
+            if !selectedText.isEmpty {
+                Text("Text Variables")
+                    .font(.headline)
+                LazyVGrid(columns: adaptiveColumns, spacing: 12) {
+                    ForEach(selectedText) { variable in
+                        VariableTextRow(
+                            variable: variable,
+                            value: viewModel.variableValues[variable.id]?.textValue,
+                            onChange: { newValue in
+                                viewModel.updateVariable(variable, textValue: newValue)
+                            }
+                        )
+                    }
+                }
+            }
+
+            if !selectedDate.isEmpty {
+                Text("Date Variables")
+                    .font(.headline)
+                LazyVGrid(columns: adaptiveColumns, spacing: 12) {
+                    ForEach(selectedDate) { variable in
+                        VariableDateRow(
+                            variable: variable,
+                            value: viewModel.variableValues[variable.id]?.dateValue,
+                            onChange: { newValue in
+                                viewModel.updateVariable(variable, dateValue: newValue)
                             }
                         )
                     }
@@ -439,7 +479,7 @@ private struct VariableSelectChip: View {
                     Text(variable.name)
                         .font(.callout)
                         .fontWeight(.medium)
-                    Text(variable.type == .int ? "Number" : "List")
+                    Text(variable.type.displayName)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
@@ -563,6 +603,131 @@ private struct VariableIntRow: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .onChange(of: value) { newValue in
             textValue = newValue.map(String.init) ?? ""
+        }
+    }
+}
+
+private struct VariableTextRow: View {
+    let variable: Variable
+    let value: String?
+    let onChange: (String?) -> Void
+
+    @State private var textValue: String = ""
+
+    init(variable: Variable, value: String?, onChange: @escaping (String?) -> Void) {
+        self.variable = variable
+        self.value = value
+        self.onChange = onChange
+        _textValue = State(initialValue: value ?? "")
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(Color(hex: variable.color) ?? .purple)
+                    .frame(width: 8, height: 8)
+                Text(variable.name)
+                    .font(.subheadline)
+                Spacer()
+            }
+
+            TextField("Enter text", text: $textValue)
+                .textFieldStyle(.roundedBorder)
+                .onChange(of: textValue) { newValue in
+                    onChange(newValue)
+                }
+
+            if !textValue.isEmpty {
+                Button("Clear") {
+                    textValue = ""
+                    onChange(nil)
+                }
+                .font(.caption)
+            }
+        }
+        .padding(10)
+        .background(.thinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .onChange(of: value) { newValue in
+            textValue = newValue ?? ""
+        }
+    }
+}
+
+private struct VariableDateRow: View {
+    let variable: Variable
+    let value: Date?
+    let onChange: (Date?) -> Void
+
+    @State private var selection: Date
+    @State private var hasValue: Bool
+
+    init(variable: Variable, value: Date?, onChange: @escaping (Date?) -> Void) {
+        self.variable = variable
+        self.value = value
+        self.onChange = onChange
+        _selection = State(initialValue: value ?? Date())
+        _hasValue = State(initialValue: value != nil)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(Color(hex: variable.color) ?? .purple)
+                    .frame(width: 8, height: 8)
+                Text(variable.name)
+                    .font(.subheadline)
+                Spacer()
+            }
+
+            Toggle("Assign Date", isOn: $hasValue)
+                .onChange(of: hasValue) { newValue in
+                    if newValue {
+                        onChange(selection)
+                    } else {
+                        onChange(nil)
+                    }
+                }
+                .font(.caption)
+
+            DatePicker(
+                "Select Date",
+                selection: $selection,
+                displayedComponents: [.date]
+            )
+            .labelsHidden()
+            .disabled(!hasValue)
+            .onChange(of: selection) { newValue in
+                if hasValue {
+                    onChange(newValue)
+                }
+            }
+
+            if hasValue {
+                Button("Clear Date") {
+                    hasValue = false
+                    onChange(nil)
+                }
+                .font(.caption)
+            } else {
+                Text("No date selected")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(10)
+        .background(.thinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .onChange(of: value) { newValue in
+            if let newValue {
+                selection = newValue
+                hasValue = true
+            } else {
+                selection = Date()
+                hasValue = false
+            }
         }
     }
 }

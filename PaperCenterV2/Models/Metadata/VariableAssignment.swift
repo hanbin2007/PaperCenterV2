@@ -30,6 +30,12 @@ final class PDFBundleVariableAssignment {
     /// List selection (for list type variables)
     var listValue: String?
 
+    /// Text value (for text type variables)
+    var textValue: String?
+
+    /// Date value (for date type variables)
+    var dateValue: Date?
+
     /// System-managed creation timestamp
     var createdAt: Date
 
@@ -38,13 +44,17 @@ final class PDFBundleVariableAssignment {
         variable: Variable,
         pdfBundle: PDFBundle,
         intValue: Int? = nil,
-        listValue: String? = nil
+        listValue: String? = nil,
+        textValue: String? = nil,
+        dateValue: Date? = nil
     ) {
         self.id = id
         self.variable = variable
         self.pdfBundle = pdfBundle
         self.intValue = intValue
         self.listValue = listValue
+        self.textValue = textValue
+        self.dateValue = dateValue
         self.createdAt = Date()
     }
 }
@@ -71,6 +81,12 @@ final class DocVariableAssignment {
     /// List selection (for list type variables)
     var listValue: String?
 
+    /// Text value (for text type variables)
+    var textValue: String?
+
+    /// Date value (for date type variables)
+    var dateValue: Date?
+
     /// System-managed creation timestamp
     var createdAt: Date
 
@@ -79,13 +95,17 @@ final class DocVariableAssignment {
         variable: Variable,
         doc: Doc,
         intValue: Int? = nil,
-        listValue: String? = nil
+        listValue: String? = nil,
+        textValue: String? = nil,
+        dateValue: Date? = nil
     ) {
         self.id = id
         self.variable = variable
         self.doc = doc
         self.intValue = intValue
         self.listValue = listValue
+        self.textValue = textValue
+        self.dateValue = dateValue
         self.createdAt = Date()
     }
 }
@@ -112,6 +132,12 @@ final class PageGroupVariableAssignment {
     /// List selection (for list type variables)
     var listValue: String?
 
+    /// Text value (for text type variables)
+    var textValue: String?
+
+    /// Date value (for date type variables)
+    var dateValue: Date?
+
     /// System-managed creation timestamp
     var createdAt: Date
 
@@ -120,13 +146,17 @@ final class PageGroupVariableAssignment {
         variable: Variable,
         pageGroup: PageGroup,
         intValue: Int? = nil,
-        listValue: String? = nil
+        listValue: String? = nil,
+        textValue: String? = nil,
+        dateValue: Date? = nil
     ) {
         self.id = id
         self.variable = variable
         self.pageGroup = pageGroup
         self.intValue = intValue
         self.listValue = listValue
+        self.textValue = textValue
+        self.dateValue = dateValue
         self.createdAt = Date()
     }
 }
@@ -153,6 +183,12 @@ final class PageVariableAssignment {
     /// List selection (for list type variables)
     var listValue: String?
 
+    /// Text value (for text type variables)
+    var textValue: String?
+
+    /// Date value (for date type variables)
+    var dateValue: Date?
+
     /// System-managed creation timestamp
     var createdAt: Date
 
@@ -161,13 +197,17 @@ final class PageVariableAssignment {
         variable: Variable,
         page: Page,
         intValue: Int? = nil,
-        listValue: String? = nil
+        listValue: String? = nil,
+        textValue: String? = nil,
+        dateValue: Date? = nil
     ) {
         self.id = id
         self.variable = variable
         self.page = page
         self.intValue = intValue
         self.listValue = listValue
+        self.textValue = textValue
+        self.dateValue = dateValue
         self.createdAt = Date()
     }
 }
@@ -194,6 +234,12 @@ final class NoteBlockVariableAssignment {
     /// List selection (for list type variables)
     var listValue: String?
 
+    /// Text value (for text type variables)
+    var textValue: String?
+
+    /// Date value (for date type variables)
+    var dateValue: Date?
+
     /// System-managed creation timestamp
     var createdAt: Date
 
@@ -202,13 +248,17 @@ final class NoteBlockVariableAssignment {
         variable: Variable,
         noteBlock: NoteBlock,
         intValue: Int? = nil,
-        listValue: String? = nil
+        listValue: String? = nil,
+        textValue: String? = nil,
+        dateValue: Date? = nil
     ) {
         self.id = id
         self.variable = variable
         self.noteBlock = noteBlock
         self.intValue = intValue
         self.listValue = listValue
+        self.textValue = textValue
+        self.dateValue = dateValue
         self.createdAt = Date()
     }
 }

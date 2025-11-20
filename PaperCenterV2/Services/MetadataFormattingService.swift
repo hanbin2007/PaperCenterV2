@@ -53,6 +53,15 @@ final class MetadataFormattingService {
                 value = assignment.intValue.map { String($0) } ?? "—"
             case .list:
                 value = assignment.listValue ?? "—"
+            case .text:
+                let trimmed = assignment.textValue?.trimmingCharacters(in: .whitespacesAndNewlines)
+                value = trimmed?.isEmpty == false ? trimmed! : "—"
+            case .date:
+                if let date = assignment.dateValue {
+                    value = Self.dateFormatter.string(from: date)
+                } else {
+                    value = "—"
+                }
             }
 
             return FormattedVariable(
@@ -77,6 +86,15 @@ final class MetadataFormattingService {
                 value = assignment.intValue.map { String($0) } ?? "—"
             case .list:
                 value = assignment.listValue ?? "—"
+            case .text:
+                let trimmed = assignment.textValue?.trimmingCharacters(in: .whitespacesAndNewlines)
+                value = trimmed?.isEmpty == false ? trimmed! : "—"
+            case .date:
+                if let date = assignment.dateValue {
+                    value = Self.dateFormatter.string(from: date)
+                } else {
+                    value = "—"
+                }
             }
 
             return FormattedVariable(
@@ -101,6 +119,15 @@ final class MetadataFormattingService {
                 value = assignment.intValue.map { String($0) } ?? "—"
             case .list:
                 value = assignment.listValue ?? "—"
+            case .text:
+                let trimmed = assignment.textValue?.trimmingCharacters(in: .whitespacesAndNewlines)
+                value = trimmed?.isEmpty == false ? trimmed! : "—"
+            case .date:
+                if let date = assignment.dateValue {
+                    value = Self.dateFormatter.string(from: date)
+                } else {
+                    value = "—"
+                }
             }
 
             return FormattedVariable(
@@ -125,6 +152,15 @@ final class MetadataFormattingService {
                 value = assignment.intValue.map { String($0) } ?? "—"
             case .list:
                 value = assignment.listValue ?? "—"
+            case .text:
+                let trimmed = assignment.textValue?.trimmingCharacters(in: .whitespacesAndNewlines)
+                value = trimmed?.isEmpty == false ? trimmed! : "—"
+            case .date:
+                if let date = assignment.dateValue {
+                    value = Self.dateFormatter.string(from: date)
+                } else {
+                    value = "—"
+                }
             }
 
             return FormattedVariable(
@@ -146,4 +182,13 @@ struct FormattedVariable: Identifiable {
     let value: String
     let type: VariableType
     let color: String
+}
+
+private extension MetadataFormattingService {
+    static let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter
+    }()
 }

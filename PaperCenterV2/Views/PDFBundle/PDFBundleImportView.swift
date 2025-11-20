@@ -70,6 +70,17 @@ struct PDFBundleImportView: View {
                     Text("Display PDF is required. OCR and Original PDFs are optional.")
                 }
 
+                if !viewModel.pagePreviews.isEmpty {
+                    Section {
+                        PageSelectionGrid(viewModel: viewModel)
+                    } header: {
+                        Text("Page Selection")
+                    } footer: {
+                        Text("Choose which Display PDF pages to import. Highlighted chips show available variants per page.")
+                            .font(.caption)
+                    }
+                }
+
                 // OCR Settings Section (only show if OCR PDF is selected)
                 if viewModel.ocrPDFURL != nil {
                     Section {
@@ -114,19 +125,21 @@ struct PDFBundleImportView: View {
             .navigationTitle("Import PDF Bundle")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
+                ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") {
                         dismiss()
                     }
+                    .buttonStyle(.plain)
                 }
 
-                ToolbarItem(placement: .confirmationAction) {
+                ToolbarItem(placement: .topBarTrailing) {
                     Button("Import") {
                         Task {
                             await viewModel.importBundle()
                             dismiss()
                         }
                     }
+                    .buttonStyle(.plain)
                     .disabled(!viewModel.canImport)
                 }
             }
@@ -166,6 +179,123 @@ struct PDFBundleImportView: View {
         case .failure(let error):
             viewModel.errorMessage = error.localizedDescription
         }
+    }
+}
+
+// MARK: - Page Selection Grid
+
+private struct PageSelectionGrid: View {
+    @Bindable var viewModel: PDFImportViewModel
+
+    private var columns: [GridItem] {
+        [GridItem(.adaptive(minimum: 140, maximum: 220), spacing: 12)]
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Selected \(viewModel.selectedPageCount) of \(viewModel.totalPageCount)")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button("Select All") {
+                    viewModel.selectAllPages()
+                }
+                .disabled(viewModel.selectedPageCount == viewModel.totalPageCount)
+
+                Button("Clear All") {
+                    viewModel.clearSelection()
+                }
+                .disabled(viewModel.selectedPageCount == 0)
+            }
+
+            LazyVGrid(columns: columns, spacing: 12) {
+                ForEach(viewModel.pagePreviews) { page in
+                    PageSelectionCard(
+                        page: page,
+                        isSelected: viewModel.isSelected(page),
+                        action: { viewModel.toggleSelection(for: page) }
+                    )
+                }
+            }
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+private struct PageSelectionCard: View {
+    let page: PDFImportViewModel.ImportPage
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 8) {
+                ZStack(alignment: .topTrailing) {
+                    pagePreview
+                        .frame(maxWidth: .infinity)
+                        .aspectRatio(3/4, contentMode: .fit)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(isSelected ? Color.accentColor : Color.secondary.opacity(0.2), lineWidth: isSelected ? 2 : 1)
+                        )
+
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                        .font(.title3)
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                        .padding(8)
+                }
+
+                Text("Page \(page.pageNumber)")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+
+                HStack(spacing: 6) {
+                    VariantChip(title: "Display", systemImage: "doc.viewfinder", isActive: true)
+                    VariantChip(title: "Original", systemImage: "doc.richtext", isActive: page.hasOriginal)
+                    VariantChip(title: "OCR", systemImage: "text.viewfinder", isActive: page.hasOCR)
+                }
+            }
+            .padding(10)
+            .background(Color(.secondarySystemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private var pagePreview: some View {
+        if let thumbnail = page.thumbnail {
+            Image(uiImage: thumbnail)
+                .resizable()
+                .scaledToFill()
+        } else {
+            ZStack {
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.gray.opacity(0.15))
+                Text("\(page.pageNumber)")
+                    .font(.title)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+}
+
+private struct VariantChip: View {
+    let title: String
+    let systemImage: String
+    let isActive: Bool
+
+    var body: some View {
+        Label(title, systemImage: systemImage)
+            .font(.caption2)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(isActive ? Color.accentColor.opacity(0.15) : Color.secondary.opacity(0.1))
+            .foregroundStyle(isActive ? Color.accentColor : Color.secondary)
+            .clipShape(Capsule())
     }
 }
 

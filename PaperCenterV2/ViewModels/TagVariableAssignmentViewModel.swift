@@ -13,6 +13,8 @@ import SwiftUI
 enum VariableValue: Equatable {
     case int(Int)
     case list(String)
+    case text(String)
+    case date(Date)
 
     var intValue: Int? {
         if case .int(let value) = self { return value }
@@ -21,6 +23,16 @@ enum VariableValue: Equatable {
 
     var listValue: String? {
         if case .list(let value) = self { return value }
+        return nil
+    }
+
+    var textValue: String? {
+        if case .text(let value) = self { return value }
+        return nil
+    }
+
+    var dateValue: Date? {
+        if case .date(let value) = self { return value }
         return nil
     }
 }
@@ -134,6 +146,14 @@ final class TagVariableAssignmentViewModel: NSObject {
                         if let value = assignment.listValue {
                             dict[variable.id] = .list(value)
                         }
+                    case .text:
+                        if let value = assignment.textValue, !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            dict[variable.id] = .text(value)
+                        }
+                    case .date:
+                        if let value = assignment.dateValue {
+                            dict[variable.id] = .date(value)
+                        }
                     }
                 }
                 selectedVariableIDs = Set(variableValues.keys)
@@ -151,6 +171,14 @@ final class TagVariableAssignmentViewModel: NSObject {
                     case .list:
                         if let value = assignment.listValue {
                             dict[variable.id] = .list(value)
+                        }
+                    case .text:
+                        if let value = assignment.textValue, !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            dict[variable.id] = .text(value)
+                        }
+                    case .date:
+                        if let value = assignment.dateValue {
+                            dict[variable.id] = .date(value)
                         }
                     }
                 }
@@ -170,6 +198,14 @@ final class TagVariableAssignmentViewModel: NSObject {
                         if let value = assignment.listValue {
                             dict[variable.id] = .list(value)
                         }
+                    case .text:
+                        if let value = assignment.textValue, !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            dict[variable.id] = .text(value)
+                        }
+                    case .date:
+                        if let value = assignment.dateValue {
+                            dict[variable.id] = .date(value)
+                        }
                     }
                 }
                 selectedVariableIDs = Set(variableValues.keys)
@@ -187,6 +223,14 @@ final class TagVariableAssignmentViewModel: NSObject {
                     case .list:
                         if let value = assignment.listValue {
                             dict[variable.id] = .list(value)
+                        }
+                    case .text:
+                        if let value = assignment.textValue, !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            dict[variable.id] = .text(value)
+                        }
+                    case .date:
+                        if let value = assignment.dateValue {
+                            dict[variable.id] = .date(value)
                         }
                     }
                 }
@@ -345,7 +389,7 @@ final class TagVariableAssignmentViewModel: NSObject {
 
         do {
             isSaving = true
-            try persistVariable(variable, intValue: intValue, listValue: nil, target: target)
+            try persistVariable(variable, value: variableValues[variable.id], target: target)
             try modelContext.save()
             statusMessage = "Saved"
         } catch {
@@ -366,7 +410,50 @@ final class TagVariableAssignmentViewModel: NSObject {
 
         do {
             isSaving = true
-            try persistVariable(variable, intValue: nil, listValue: listValue, target: target)
+            try persistVariable(variable, value: variableValues[variable.id], target: target)
+            try modelContext.save()
+            statusMessage = "Saved"
+        } catch {
+            errorMessage = "Failed to save variable: \(error.localizedDescription)"
+        }
+        isSaving = false
+    }
+
+    func updateVariable(_ variable: Variable, textValue: String?) {
+        selectedVariableIDs.insert(variable.id)
+        let trimmed = textValue?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !trimmed.isEmpty {
+            variableValues[variable.id] = .text(trimmed)
+        } else {
+            variableValues.removeValue(forKey: variable.id)
+        }
+
+        guard let target = target else { return }
+
+        do {
+            isSaving = true
+            try persistVariable(variable, value: variableValues[variable.id], target: target)
+            try modelContext.save()
+            statusMessage = "Saved"
+        } catch {
+            errorMessage = "Failed to save variable: \(error.localizedDescription)"
+        }
+        isSaving = false
+    }
+
+    func updateVariable(_ variable: Variable, dateValue: Date?) {
+        selectedVariableIDs.insert(variable.id)
+        if let dateValue {
+            variableValues[variable.id] = .date(dateValue)
+        } else {
+            variableValues.removeValue(forKey: variable.id)
+        }
+
+        guard let target = target else { return }
+
+        do {
+            isSaving = true
+            try persistVariable(variable, value: variableValues[variable.id], target: target)
             try modelContext.save()
             statusMessage = "Saved"
         } catch {
@@ -386,7 +473,7 @@ final class TagVariableAssignmentViewModel: NSObject {
             let selectedVars = availableVariables.filter { selectedVariableIDs.contains($0.id) }
             for variable in selectedVars {
                 let value = variableValues[variable.id]
-                try? persistVariable(variable, intValue: value?.intValue, listValue: value?.listValue, target: target)
+                try? persistVariable(variable, value: value, target: target)
             }
         case .pdfBundle(let bundle):
             let tags = availableTags.filter { selectedTagIDs.contains($0.id) }
@@ -394,7 +481,7 @@ final class TagVariableAssignmentViewModel: NSObject {
             let selectedVars = availableVariables.filter { selectedVariableIDs.contains($0.id) }
             for variable in selectedVars {
                 let value = variableValues[variable.id]
-                try? persistVariable(variable, intValue: value?.intValue, listValue: value?.listValue, target: target)
+                try? persistVariable(variable, value: value, target: target)
             }
         case .pageGroup(let group):
             let tags = availableTags.filter { selectedTagIDs.contains($0.id) }
@@ -402,7 +489,7 @@ final class TagVariableAssignmentViewModel: NSObject {
             let selectedVars = availableVariables.filter { selectedVariableIDs.contains($0.id) }
             for variable in selectedVars {
                 let value = variableValues[variable.id]
-                try? persistVariable(variable, intValue: value?.intValue, listValue: value?.listValue, target: target)
+                try? persistVariable(variable, value: value, target: target)
             }
         case .page(let page):
             let tags = availableTags.filter { selectedTagIDs.contains($0.id) }
@@ -410,7 +497,7 @@ final class TagVariableAssignmentViewModel: NSObject {
             let selectedVars = availableVariables.filter { selectedVariableIDs.contains($0.id) }
             for variable in selectedVars {
                 let value = variableValues[variable.id]
-                try? persistVariable(variable, intValue: value?.intValue, listValue: value?.listValue, target: target)
+                try? persistVariable(variable, value: value, target: target)
             }
         }
     }
@@ -430,8 +517,7 @@ final class TagVariableAssignmentViewModel: NSObject {
 
     private func persistVariable(
         _ variable: Variable,
-        intValue: Int?,
-        listValue: String?,
+        value: VariableValue?,
         target: Target
     ) throws {
         switch target {
@@ -442,8 +528,10 @@ final class TagVariableAssignmentViewModel: NSObject {
                 if doc.variableAssignments == nil { doc.variableAssignments = [] }
                 doc.variableAssignments?.append(assignment!)
             }
-            assignment?.intValue = intValue
-            assignment?.listValue = listValue
+            assignment?.intValue = value?.intValue
+            assignment?.listValue = value?.listValue
+            assignment?.textValue = value?.textValue
+            assignment?.dateValue = value?.dateValue
             doc.touch()
         case .pdfBundle(let bundle):
             var assignment = bundle.variableAssignments?.first(where: { $0.variable?.id == variable.id })
@@ -452,8 +540,10 @@ final class TagVariableAssignmentViewModel: NSObject {
                 if bundle.variableAssignments == nil { bundle.variableAssignments = [] }
                 bundle.variableAssignments?.append(assignment!)
             }
-            assignment?.intValue = intValue
-            assignment?.listValue = listValue
+            assignment?.intValue = value?.intValue
+            assignment?.listValue = value?.listValue
+            assignment?.textValue = value?.textValue
+            assignment?.dateValue = value?.dateValue
         case .pageGroup(let group):
             var assignment = group.variableAssignments?.first(where: { $0.variable?.id == variable.id })
             if assignment == nil {
@@ -461,8 +551,10 @@ final class TagVariableAssignmentViewModel: NSObject {
                 if group.variableAssignments == nil { group.variableAssignments = [] }
                 group.variableAssignments?.append(assignment!)
             }
-            assignment?.intValue = intValue
-            assignment?.listValue = listValue
+            assignment?.intValue = value?.intValue
+            assignment?.listValue = value?.listValue
+            assignment?.textValue = value?.textValue
+            assignment?.dateValue = value?.dateValue
         case .page(let page):
             var assignment = page.variableAssignments?.first(where: { $0.variable?.id == variable.id })
             if assignment == nil {
@@ -470,8 +562,10 @@ final class TagVariableAssignmentViewModel: NSObject {
                 if page.variableAssignments == nil { page.variableAssignments = [] }
                 page.variableAssignments?.append(assignment!)
             }
-            assignment?.intValue = intValue
-            assignment?.listValue = listValue
+            assignment?.intValue = value?.intValue
+            assignment?.listValue = value?.listValue
+            assignment?.textValue = value?.textValue
+            assignment?.dateValue = value?.dateValue
         }
     }
 

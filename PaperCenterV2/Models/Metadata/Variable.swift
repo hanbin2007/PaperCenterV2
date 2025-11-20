@@ -34,7 +34,7 @@ final class Variable {
     /// Manual sort index to control order in pickers and lists
     var sortIndex: Int
 
-    /// Predefined options for list type (nil for int type)
+    /// Predefined options for list type (nil for other types)
     /// Example: ["Easy", "Medium", "Hard"]
     var listOptions: [String]?
 
@@ -91,5 +91,18 @@ final class Variable {
     func isValid(listValue: String?) -> Bool {
         guard type == .list, let listValue = listValue else { return false }
         return listOptions?.contains(listValue) ?? false
+    }
+
+    /// Validate free-form text input
+    func isValid(textValue: String?) -> Bool {
+        guard type == .text else { return false }
+        let trimmed = textValue?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return !trimmed.isEmpty
+    }
+
+    /// Validate a date input
+    func isValid(dateValue: Date?) -> Bool {
+        guard type == .date else { return false }
+        return dateValue != nil
     }
 }

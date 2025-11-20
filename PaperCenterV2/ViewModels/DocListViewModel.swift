@@ -44,7 +44,9 @@ final class DocListViewModel {
                     variable: variable,
                     doc: duplicate,
                     intValue: assignment.intValue,
-                    listValue: assignment.listValue
+                    listValue: assignment.listValue,
+                    textValue: assignment.textValue,
+                    dateValue: assignment.dateValue
                 )
             }
         }
@@ -63,7 +65,9 @@ final class DocListViewModel {
                         variable: variable,
                         pageGroup: clonedGroup,
                         intValue: assignment.intValue,
-                        listValue: assignment.listValue
+                        listValue: assignment.listValue,
+                        textValue: assignment.textValue,
+                        dateValue: assignment.dateValue
                     )
                 }
             }
@@ -79,7 +83,9 @@ final class DocListViewModel {
                             variable: variable,
                             page: clonedPage,
                             intValue: assignment.intValue,
-                            listValue: assignment.listValue
+                            listValue: assignment.listValue,
+                            textValue: assignment.textValue,
+                            dateValue: assignment.dateValue
                         )
                     }
                 }

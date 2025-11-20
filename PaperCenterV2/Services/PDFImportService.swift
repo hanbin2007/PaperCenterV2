@@ -68,23 +68,40 @@ final class PDFImportService {
         name: String,
         displayPDF: URL,
         ocrPDF: URL? = nil,
-        originalPDF: URL? = nil
+        originalPDF: URL? = nil,
+        selectedDisplayPages: [Int]? = nil
     ) async throws -> PDFBundle {
         // Create new bundle with name
         let bundle = PDFBundle(name: name)
         modelContext.insert(bundle)
 
+        var cleanupURLs: [URL] = []
+        defer {
+            cleanupURLs.forEach { try? fileManager.removeItem(at: $0) }
+        }
+
+        guard let displaySource = try filteredSourceURL(for: displayPDF, selectedPages: selectedDisplayPages, required: true) else {
+            throw PDFImportError.noSelectedPages
+        }
+        if displaySource.isTemporary { cleanupURLs.append(displaySource.url) }
+
         // Import display PDF (required)
-        let _ = try await importPDF(from: displayPDF, type: .display, into: bundle)
+        let _ = try await importPDF(from: displaySource.url, type: .display, into: bundle)
 
         // Import OCR PDF if provided
         if let ocrURL = ocrPDF {
-            let _ = try await importPDF(from: ocrURL, type: .ocr, into: bundle)
+            if let ocrSource = try filteredSourceURL(for: ocrURL, selectedPages: selectedDisplayPages, required: false) {
+                if ocrSource.isTemporary { cleanupURLs.append(ocrSource.url) }
+                let _ = try await importPDF(from: ocrSource.url, type: .ocr, into: bundle)
+            }
         }
 
         // Import original PDF if provided
         if let originalURL = originalPDF {
-            let _ = try await importPDF(from: originalURL, type: .original, into: bundle)
+            if let originalSource = try filteredSourceURL(for: originalURL, selectedPages: selectedDisplayPages, required: false) {
+                if originalSource.isTemporary { cleanupURLs.append(originalSource.url) }
+                let _ = try await importPDF(from: originalSource.url, type: .original, into: bundle)
+            }
         }
 
         return bundle
@@ -420,6 +437,7 @@ enum PDFImportError: LocalizedError {
     case invalidPDF
     case bundleInUse
     case copyFailed
+    case noSelectedPages
 
     var errorDescription: String? {
         switch self {
@@ -433,6 +451,68 @@ enum PDFImportError: LocalizedError {
             return "Cannot delete bundle: still referenced by pages"
         case .copyFailed:
             return "Failed to copy PDF file to app storage"
+        case .noSelectedPages:
+            return "No pages available for the selected filters"
         }
+    }
+}
+
+private extension PDFImportService {
+    typealias FilteredSource = (url: URL, isTemporary: Bool)
+
+    func filteredSourceURL(
+        for url: URL,
+        selectedPages: [Int]?,
+        required: Bool
+    ) throws -> FilteredSource? {
+        guard let selectedPages, !selectedPages.isEmpty else {
+            return (url, false)
+        }
+
+        let subsetURL = try subsetPDF(at: url, keeping: selectedPages)
+
+        if let subsetURL {
+            return (subsetURL, true)
+        }
+
+        if required {
+            throw PDFImportError.noSelectedPages
+        } else {
+            return nil
+        }
+    }
+
+    func subsetPDF(at url: URL, keeping pages: [Int]) throws -> URL? {
+        let uniquePages = Array(Set(pages)).sorted()
+        guard let document = PDFDocument(url: url) else {
+            throw PDFImportError.invalidPDF
+        }
+
+        var extractedPages: [PDFPage] = []
+        for pageNumber in uniquePages {
+            let zeroIndex = pageNumber - 1
+            guard zeroIndex >= 0, zeroIndex < document.pageCount,
+                  let page = document.page(at: zeroIndex) else { continue }
+            extractedPages.append(page)
+        }
+
+        guard !extractedPages.isEmpty else {
+            return nil
+        }
+
+        let newDocument = PDFDocument()
+        for (index, page) in extractedPages.enumerated() {
+            newDocument.insert(page, at: index)
+        }
+
+        let tempURL = fileManager.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("pdf")
+
+        guard newDocument.write(to: tempURL) else {
+            throw PDFImportError.copyFailed
+        }
+
+        return tempURL
     }
 }
