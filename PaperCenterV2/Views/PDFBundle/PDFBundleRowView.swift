@@ -11,46 +11,95 @@ import SwiftUI
 struct PDFBundleRowView: View {
     let bundle: PDFBundle
     let info: BundleDisplayInfo
+    @State private var thumbnailImage: Image?
+    @State private var isLoadingThumbnail = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // Bundle name
-            Text(bundle.displayName)
-                .font(.headline)
+        HStack(alignment: .top, spacing: 12) {
+            thumbnailView
+            VStack(alignment: .leading, spacing: 8) {
+                Text(bundle.displayName)
+                    .font(.headline)
 
-            // PDF availability indicators
-            HStack(spacing: 8) {
-                PDFIndicator(type: "Display", available: info.hasDisplay)
-                PDFIndicator(type: "OCR", available: info.hasOCR)
-                PDFIndicator(type: "Original", available: info.hasOriginal)
-            }
-
-            // Bundle info
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("\(info.pageCount) pages")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    Text("Created: \(info.createdAt, format: .dateTime.month().day().year())")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
+                HStack(spacing: 8) {
+                    PDFIndicator(type: "Display", available: info.hasDisplay)
+                    PDFIndicator(type: "OCR", available: info.hasOCR)
+                    PDFIndicator(type: "Original", available: info.hasOriginal)
                 }
 
-                Spacer()
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("\(info.pageCount) pages")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
 
-                if info.referenceCount > 0 {
-                    Text("\(info.referenceCount) refs")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.secondary.opacity(0.1))
-                        .clipShape(Capsule())
+                        Text("Created: \(info.createdAt, format: .dateTime.month().day().year())")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
+
+                    Spacer()
+
+                    if info.referenceCount > 0 {
+                        Text("\(info.referenceCount) refs")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.secondary.opacity(0.1))
+                            .clipShape(Capsule())
+                    }
                 }
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 6)
+        .task(id: bundle.id) {
+            await loadThumbnailIfNeeded()
+        }
+    }
+
+    private var thumbnailView: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color(.systemGray6))
+                .frame(width: bundleThumbnailSize.width, height: bundleThumbnailSize.height)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(Color.secondary.opacity(0.2), lineWidth: 0.5)
+                )
+
+            if let thumbnailImage {
+                thumbnailImage
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: bundleThumbnailSize.width, height: bundleThumbnailSize.height)
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            } else {
+                Image(systemName: isLoadingThumbnail ? "hourglass" : "doc.richtext")
+                    .font(.system(size: 24, weight: .light))
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func loadThumbnailIfNeeded() async {
+        guard !isLoadingThumbnail, thumbnailImage == nil else { return }
+        guard info.pageCount > 0 else { return }
+        isLoadingThumbnail = true
+        defer { isLoadingThumbnail = false }
+
+        do {
+            let descriptor = try await UniversalThumbnailService.shared.thumbnail(
+                for: bundle,
+                page: 1,
+                size: bundleThumbnailSize
+            )
+            await MainActor.run {
+                thumbnailImage = Image(uiImage: descriptor.image)
+            }
+        } catch {
+            print("Thumbnail error for bundle \(bundle.id): \(error)")
+        }
     }
 }
 
@@ -75,3 +124,5 @@ private struct PDFIndicator: View {
         .clipShape(Capsule())
     }
 }
+
+private let bundleThumbnailSize = CGSize(width: 84, height: 112)
