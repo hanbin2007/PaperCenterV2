@@ -71,14 +71,17 @@ private struct TagManagementView: View {
             .padding(.horizontal)
             .padding(.bottom, 8)
 
-            if showTagGroups {
-                TagGroupListView()
-            } else {
-                TagListView()
+            NavigationStack {
+                if showTagGroups {
+                    TagGroupListView()
+                        .navigationDestination(for: TagGroup.self) { tagGroup in
+                            TagListView(filterTagGroup: tagGroup)
+                                .navigationTitle(tagGroup.name)
+                        }
+                } else {
+                    TagListView()
+                }
             }
-        }
-        .navigationDestination(for: TagGroup.self) { tagGroup in
-            TagGroupManagementView(tagGroup: tagGroup)
         }
     }
 }

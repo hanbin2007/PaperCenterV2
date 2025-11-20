@@ -30,11 +30,40 @@ ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeD
 
 ExecuteExternalTool /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
 
-Build description signature: 2f6e1ab9d7883bfa7917ceb4039e8ee9
-Build description path: /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/XCBuildData/2f6e1ab9d7883bfa7917ceb4039e8ee9.xcbuilddata
+Build description signature: f879cef387d7d3a6d08322beaa86b8d2
+Build description path: /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/XCBuildData/f879cef387d7d3a6d08322beaa86b8d2.xcbuilddata
 ClangStatCache /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.0.sdk /Users/zhb/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphonesimulator26.0-23A339-26257891a6c027eb51374368541b8346.sdkstatcache
     cd /Users/zhb/Documents/PaperCenterV2/PaperCenterV2.xcodeproj
     /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.0.sdk -o /Users/zhb/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphonesimulator26.0-23A339-26257891a6c027eb51374368541b8346.sdkstatcache
+
+WriteAuxiliaryFile /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/PaperCenterV2.SwiftConstValuesFileList (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    write-file /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/PaperCenterV2.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/PaperCenterV2.SwiftFileList (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    write-file /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/PaperCenterV2.SwiftFileList
+
+WriteAuxiliaryFile /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/PaperCenterV2.LinkFileList (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    write-file /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/PaperCenterV2.LinkFileList
+
+WriteAuxiliaryFile /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/PaperCenterV2-OutputFileMap.json (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    write-file /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/PaperCenterV2-OutputFileMap.json
+
+GenerateAssetSymbols /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Assets.xcassets (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    /Applications/Xcode.app/Contents/Developer/usr/bin/actool /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Assets.xcassets --compile /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator/PaperCenterV2.app --output-format human-readable-text --notices --warnings --export-dependency-info /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/assetcatalog_dependencies --output-partial-info-plist /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/assetcatalog_generated_info.plist --app-icon AppIcon --accent-color AccentColor --compress-pngs --enable-on-demand-resources YES --development-region en --target-device iphone --target-device ipad --minimum-deployment-target 17.0 --platform iphonesimulator --bundle-identifier hanbin.PaperCenterV2 --generate-swift-asset-symbols /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/DerivedSources/GeneratedAssetSymbols.swift --generate-objc-asset-symbols /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/DerivedSources/GeneratedAssetSymbols.h --generate-asset-symbol-index /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/DerivedSources/GeneratedAssetSymbols-Index.plist
+/* com.apple.actool.compilation-results */
+/Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/DerivedSources/GeneratedAssetSymbols-Index.plist
+/Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/DerivedSources/GeneratedAssetSymbols.h
+/Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/DerivedSources/GeneratedAssetSymbols.swift
+
+
+LinkAssetCatalog /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Assets.xcassets (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    builtin-linkAssetCatalog --thinned /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/assetcatalog_output/thinned --thinned-dependencies /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/assetcatalog_dependencies_thinned --thinned-info-plist-content /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/assetcatalog_generated_info.plist_thinned --unthinned /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/assetcatalog_output/unthinned --unthinned-dependencies /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/assetcatalog_dependencies_unthinned --unthinned-info-plist-content /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/assetcatalog_generated_info.plist_unthinned --output /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator/PaperCenterV2.app --plist-output /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/assetcatalog_generated_info.plist
 
 ProcessInfoPlistFile /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator/PaperCenterV2.app/Info.plist /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Info.plist (in target 'PaperCenterV2' from project 'PaperCenterV2')
     cd /Users/zhb/Documents/PaperCenterV2
@@ -44,68 +73,133 @@ SwiftDriver PaperCenterV2 normal arm64 com.apple.xcode.tools.swift.compiler (in 
     cd /Users/zhb/Documents/PaperCenterV2
     builtin-SwiftDriver -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name PaperCenterV2 -Onone -enforce-exclusivity\=checked @/Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/PaperCenterV2.SwiftFileList -DDEBUG -default-isolation\=MainActor -enable-bare-slash-regex -enable-upcoming-feature DisableOutwardActorInference -enable-upcoming-feature InferSendableFromCaptures -enable-upcoming-feature GlobalActorIsolatedTypesUsability -enable-upcoming-feature MemberImportVisibility -enable-upcoming-feature InferIsolatedConformances -enable-upcoming-feature NonisolatedNonsendingByDefault -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.0.sdk -target arm64-apple-ios17.0-simulator -g -module-cache-path /Users/zhb/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -profile-coverage-mapping -profile-generate -enable-testing -index-store-path /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator -F /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/zhb/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphonesimulator26.0-23A339-26257891a6c027eb51374368541b8346.sdkstatcache -output-file-map /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/PaperCenterV2-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/zhb/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Users/zhb/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/PaperCenterV2.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/zhb/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/PaperCenterV2_const_extract_protocols.json -Xcc -iquote -Xcc /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/PaperCenterV2-generated-files.hmap -Xcc -I/Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/PaperCenterV2-own-target-headers.hmap -Xcc -I/Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/PaperCenterV2-all-target-headers.hmap -Xcc -iquote -Xcc /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/PaperCenterV2-project-headers.hmap -Xcc -I/Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/DerivedSources-normal/arm64 -Xcc -I/Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/DerivedSources/arm64 -Xcc -I/Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/PaperCenterV2-Swift.h -working-directory /Users/zhb/Documents/PaperCenterV2 -experimental-emit-module-separately -disable-cmo
 
-SwiftEmitModule normal arm64 Emitting\ module\ for\ PaperCenterV2 (in target 'PaperCenterV2' from project 'PaperCenterV2')
+SwiftCompile normal arm64 Compiling\ PDFBundleListViewModel.swift,\ PDFImportViewModel.swift,\ PropertyManagementViewModel.swift,\ TagVariableAssignmentViewModel.swift,\ ColorExtension.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/ViewModels/PDFBundleListViewModel.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/ViewModels/PDFImportViewModel.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/ViewModels/PropertyManagementViewModel.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/ViewModels/TagVariableAssignmentViewModel.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/ColorExtension.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
 
-EmitSwiftModule normal arm64 (in target 'PaperCenterV2' from project 'PaperCenterV2')
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/ViewModels/PDFBundleListViewModel.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
     cd /Users/zhb/Documents/PaperCenterV2
     
 
-SwiftCompile normal arm64 Compiling\ TagGroupListView.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/TagGroupListView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
-
-SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/TagGroupListView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/ViewModels/PDFImportViewModel.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
     cd /Users/zhb/Documents/PaperCenterV2
     
 
-SwiftDriverJobDiscovery normal arm64 Compiling TagGroupListView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
-
-SwiftCompile normal arm64 Compiling\ TagEditView.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/TagEditView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
-SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/TagEditView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
-    cd /Users/zhb/Documents/PaperCenterV2
-    
-/Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/TagEditView.swift:64:53: warning: left side of nil coalescing operator '??' has non-optional type 'Color', so the right side is never used
-                            .fill(Color(hex: color) ?? .blue)
-                                  ~~~~~~~~~~~~~~~~~~^~~~~~~~
-                                                   
-
-SwiftCompile normal arm64 Compiling\ TagListView.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/TagListView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
-SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/TagListView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
-    cd /Users/zhb/Documents/PaperCenterV2
-    
-/Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/TagListView.swift:197:45: warning: left side of nil coalescing operator '??' has non-optional type 'Color', so the right side is never used
-                .fill(Color(hex: tag.color) ?? .blue)
-                      ~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~
-                                           
-
-SwiftCompile normal arm64 Compiling\ VariableListView.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/VariableListView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
-
-SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/VariableListView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
-    cd /Users/zhb/Documents/PaperCenterV2
-    
-/Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/VariableListView.swift:203:50: warning: left side of nil coalescing operator '??' has non-optional type 'Color', so the right side is never used
-                .fill(Color(hex: variable.color) ?? .purple)
-                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~
-                                                
-
-SwiftCompile normal arm64 Compiling\ OCRDebugView.swift,\ PropertiesManagementView.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Debug/OCRDebugView.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/PropertiesManagementView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
-SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Debug/OCRDebugView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/ViewModels/PropertyManagementViewModel.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
     cd /Users/zhb/Documents/PaperCenterV2
     
 
-SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/PropertiesManagementView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/ViewModels/TagVariableAssignmentViewModel.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+/Users/zhb/Documents/PaperCenterV2/PaperCenterV2/ViewModels/TagVariableAssignmentViewModel.swift:84:64: warning: main actor-isolated static property 'metadataCatalogDidChange' can not be referenced from a nonisolated context
+        NotificationCenter.default.removeObserver(self, name: .metadataCatalogDidChange, object: nil)
+                                                               ^
+/Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Models/Metadata/MetadataNotifications.swift:11:16: note: static property declared here
+    static let metadataCatalogDidChange = Notification.Name("MetadataCatalogDidChange")
+               ^
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/ColorExtension.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
     cd /Users/zhb/Documents/PaperCenterV2
     
 
-SwiftCompile normal arm64 Compiling\ VariableEditView.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/VariableEditView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+SwiftCompile normal arm64 Compiling\ Doc.swift,\ NoteBlock.swift,\ Page.swift,\ PageGroup.swift,\ PageVersion.swift,\ PDFBundle.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Models/Core/Doc.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Models/Core/NoteBlock.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Models/Core/Page.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Models/Core/PageGroup.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Models/Core/PageVersion.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Models/Core/PDFBundle.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
 
-SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/VariableEditView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Models/Core/Doc.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
     cd /Users/zhb/Documents/PaperCenterV2
     
-/Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/VariableEditView.swift:70:53: warning: left side of nil coalescing operator '??' has non-optional type 'Color', so the right side is never used
-                            .fill(Color(hex: color) ?? .purple)
-                                  ~~~~~~~~~~~~~~~~~~^~~~~~~~~~
-                                                   
 
-SwiftCompile normal arm64 Compiling\ ListOptionsEditor.swift,\ PropertyScopeSelector.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/ListOptionsEditor.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/PropertyScopeSelector.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Models/Core/NoteBlock.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Models/Core/Page.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Models/Core/PageGroup.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Models/Core/PageVersion.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+/Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Models/Core/PageVersion.swift:73:34: warning: main actor-isolated conformance of 'MetadataSnapshot' to 'Encodable' cannot be used in nonisolated context; this is an error in the Swift 6 language mode
+        return try JSONEncoder().encode(snapshot)
+                                 ^
+/Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Models/Core/PageVersion.swift:79:34: warning: main actor-isolated conformance of 'MetadataSnapshot' to 'Decodable' cannot be used in nonisolated context; this is an error in the Swift 6 language mode
+        return try JSONDecoder().decode(MetadataSnapshot.self, from: data)
+                                 ^
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Models/Core/PDFBundle.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+
+SwiftCompile normal arm64 Compiling\ Tag.swift,\ TagGroup.swift,\ Variable.swift,\ VariableAssignment.swift,\ DocCreationService.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Models/Metadata/Tag.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Models/Metadata/TagGroup.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Models/Metadata/Variable.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Models/Metadata/VariableAssignment.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Services/DocCreationService.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Models/Metadata/Tag.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Models/Metadata/TagGroup.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Models/Metadata/Variable.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Models/Metadata/VariableAssignment.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Services/DocCreationService.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+
+SwiftCompile normal arm64 Compiling\ MetadataFormattingService.swift,\ OCRSettings.swift,\ PDFImportService.swift,\ PropertyManagementService.swift,\ DocListViewModel.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Services/MetadataFormattingService.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Services/OCRSettings.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Services/PDFImportService.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Services/PropertyManagementService.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/ViewModels/DocListViewModel.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Services/MetadataFormattingService.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Services/OCRSettings.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Services/PDFImportService.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Services/PropertyManagementService.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/ViewModels/DocListViewModel.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+
+SwiftCompile normal arm64 Compiling\ TagScope.swift,\ VariableScope.swift,\ VariableType.swift,\ MetadataNotifications.swift,\ PropertyOrdering.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Models/Enums/TagScope.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Models/Enums/VariableScope.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Models/Enums/VariableType.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Models/Metadata/MetadataNotifications.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Models/Metadata/PropertyOrdering.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Models/Enums/TagScope.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Models/Enums/VariableScope.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Models/Enums/VariableType.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Models/Metadata/MetadataNotifications.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Models/Metadata/PropertyOrdering.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+
+SwiftCompile normal arm64 Compiling\ ListOptionsEditor.swift,\ PropertyScopeSelector.swift,\ PropertyTypeSelector.swift,\ TagColorPicker.swift,\ TagDisplayView.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/ListOptionsEditor.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/PropertyScopeSelector.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/PropertyTypeSelector.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/TagColorPicker.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/TagDisplayView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
 
 SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/ListOptionsEditor.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
     cd /Users/zhb/Documents/PaperCenterV2
@@ -114,8 +208,6 @@ SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views
 SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/PropertyScopeSelector.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
     cd /Users/zhb/Documents/PaperCenterV2
     
-
-SwiftCompile normal arm64 Compiling\ PropertyTypeSelector.swift,\ TagColorPicker.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/PropertyTypeSelector.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/TagColorPicker.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
 
 SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/PropertyTypeSelector.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
     cd /Users/zhb/Documents/PaperCenterV2
@@ -133,27 +225,192 @@ SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views
                           ~~~~~~~~~~~~~~~~~~~~~^~~~~~~~
                                               
 
-SwiftCompile normal arm64 Compiling\ TagGroupManagementView.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/TagGroupManagementView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
-
-SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/TagGroupManagementView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/TagDisplayView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
     cd /Users/zhb/Documents/PaperCenterV2
     
-/Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/TagGroupManagementView.swift:161:45: warning: left side of nil coalescing operator '??' has non-optional type 'Color', so the right side is never used
-                .fill(Color(hex: tag.color) ?? .blue)
-                      ~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~
-                                           
 
-SwiftCompile normal arm64 Compiling\ PlaceholderView.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/PlaceholderView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+SwiftEmitModule normal arm64 Emitting\ module\ for\ PaperCenterV2 (in target 'PaperCenterV2' from project 'PaperCenterV2')
+
+EmitSwiftModule normal arm64 (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+
+SwiftCompile normal arm64 Compiling\ DocRowView.swift,\ PDFBundleImportView.swift,\ PDFBundleListView.swift,\ PDFBundleRowView.swift,\ PropertiesManagementView.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Doc/DocRowView.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/PDFBundle/PDFBundleImportView.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/PDFBundle/PDFBundleListView.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/PDFBundle/PDFBundleRowView.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/PropertiesManagementView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Doc/DocRowView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/PDFBundle/PDFBundleImportView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/PDFBundle/PDFBundleListView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/PDFBundle/PDFBundleRowView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/PropertiesManagementView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+
+SwiftCompile normal arm64 Compiling\ TagVariableAssignmentView.swift,\ VariableDisplayView.swift,\ OCRDebugView.swift,\ DocCreationView.swift,\ DocListView.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/TagVariableAssignmentView.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/VariableDisplayView.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Debug/OCRDebugView.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Doc/DocCreationView.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Doc/DocListView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/TagVariableAssignmentView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+/Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/TagVariableAssignmentView.swift:382:48: warning: left side of nil coalescing operator '??' has non-optional type 'Color', so the right side is never used
+            .background((Color(hex: tag.color) ?? .blue).opacity(0.12))
+                         ~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~
+                                              
+/Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/TagVariableAssignmentView.swift:383:52: warning: left side of nil coalescing operator '??' has non-optional type 'Color', so the right side is never used
+            .foregroundStyle(Color(hex: tag.color) ?? .blue)
+                             ~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~
+                                                  
+/Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/TagVariableAssignmentView.swift:386:52: warning: left side of nil coalescing operator '??' has non-optional type 'Color', so the right side is never used
+                    .stroke((Color(hex: tag.color) ?? .blue).opacity(0.3), lineWidth: 1)
+                             ~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~
+                                                  
+/Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/TagVariableAssignmentView.swift:450:53: warning: left side of nil coalescing operator '??' has non-optional type 'Color', so the right side is never used
+            .background((Color(hex: variable.color) ?? .purple).opacity(0.08))
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~
+                                                   
+/Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/TagVariableAssignmentView.swift:453:57: warning: left side of nil coalescing operator '??' has non-optional type 'Color', so the right side is never used
+                    .stroke((Color(hex: variable.color) ?? .purple).opacity(isSelected ? 0.5 : 0.25), lineWidth: isSelected ? 1.2 : 1)
+                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~
+                                                       
+/Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/TagVariableAssignmentView.swift:458:53: warning: left side of nil coalescing operator '??' has non-optional type 'Color', so the right side is never used
+        .foregroundStyle(Color(hex: variable.color) ?? .primary)
+                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~
+                                                   
+/Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/TagVariableAssignmentView.swift:471:54: warning: left side of nil coalescing operator '??' has non-optional type 'Color', so the right side is never used
+                    .fill(Color(hex: variable.color) ?? .purple)
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~
+                                                    
+/Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/TagVariableAssignmentView.swift:494:101: warning: left side of nil coalescing operator '??' has non-optional type 'Color', so the right side is never used
+                        .foregroundStyle(selected == nil ? .secondary : (Color(hex: variable.color) ?? .primary))
+                                                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~
+                                                                                                   
+/Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/TagVariableAssignmentView.swift:502:57: warning: left side of nil coalescing operator '??' has non-optional type 'Color', so the right side is never used
+                .background((Color(hex: variable.color) ?? .purple).opacity(0.08))
+                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~
+                                                       
+/Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/TagVariableAssignmentView.swift:505:61: warning: left side of nil coalescing operator '??' has non-optional type 'Color', so the right side is never used
+                        .stroke((Color(hex: variable.color) ?? .purple).opacity(0.25), lineWidth: 1)
+                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~
+                                                           
+/Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/TagVariableAssignmentView.swift:535:54: warning: left side of nil coalescing operator '??' has non-optional type 'Color', so the right side is never used
+                    .fill(Color(hex: variable.color) ?? .purple)
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~
+                                                    
+/Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/TagVariableAssignmentView.swift:545:22: warning: 'onChange(of:perform:)' was deprecated in iOS 17.0: Use `onChange` with a two or zero parameter action closure instead.
+                    .onChange(of: textValue) { newValue in
+                     ^
+/Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/TagVariableAssignmentView.swift:564:10: warning: 'onChange(of:perform:)' was deprecated in iOS 17.0: Use `onChange` with a two or zero parameter action closure instead.
+        .onChange(of: value) { newValue in
+         ^
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/VariableDisplayView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+/Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/VariableDisplayView.swift:33:50: warning: left side of nil coalescing operator '??' has non-optional type 'Color', so the right side is never used
+                .fill(Color(hex: variable.color) ?? .purple)
+                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~
+                                                
+/Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/VariableDisplayView.swift:39:57: warning: left side of nil coalescing operator '??' has non-optional type 'Color', so the right side is never used
+                .background((Color(hex: variable.color) ?? .purple).opacity(0.12))
+                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~
+                                                       
+/Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Components/VariableDisplayView.swift:40:61: warning: left side of nil coalescing operator '??' has non-optional type 'Color', so the right side is never used
+                .foregroundStyle(Color(hex: variable.color) ?? .purple)
+                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~
+                                                           
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Debug/OCRDebugView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Doc/DocCreationView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Doc/DocListView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+
+SwiftCompile normal arm64 Compiling\ VariableListView.swift,\ MainTabView.swift,\ PlaceholderView.swift,\ PaperCenterV2App.swift,\ GeneratedAssetSymbols.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/VariableListView.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/MainTabView.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/PlaceholderView.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/PaperCenterV2App.swift /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/VariableListView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+/Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/VariableListView.swift:203:50: warning: left side of nil coalescing operator '??' has non-optional type 'Color', so the right side is never used
+                .fill(Color(hex: variable.color) ?? .purple)
+                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~
+                                                
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/MainTabView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
 
 SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/PlaceholderView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
     cd /Users/zhb/Documents/PaperCenterV2
     
 
-SwiftCompile normal arm64 Compiling\ TagGroupEditView.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/TagGroupEditView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/PaperCenterV2App.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+
+SwiftCompile normal arm64 /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+
+SwiftCompile normal arm64 Compiling\ TagEditView.swift,\ TagGroupEditView.swift,\ TagGroupListView.swift,\ TagListView.swift,\ VariableEditView.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/TagEditView.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/TagGroupEditView.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/TagGroupListView.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/TagListView.swift /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/VariableEditView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/TagEditView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+/Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/TagEditView.swift:64:53: warning: left side of nil coalescing operator '??' has non-optional type 'Color', so the right side is never used
+                            .fill(Color(hex: color) ?? .blue)
+                                  ~~~~~~~~~~~~~~~~~~^~~~~~~~
+                                                   
 
 SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/TagGroupEditView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
     cd /Users/zhb/Documents/PaperCenterV2
     
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/TagGroupListView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/TagListView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+/Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/TagListView.swift:197:45: warning: left side of nil coalescing operator '??' has non-optional type 'Color', so the right side is never used
+                .fill(Color(hex: tag.color) ?? .blue)
+                      ~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~
+                                           
+
+SwiftCompile normal arm64 /Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/VariableEditView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+    cd /Users/zhb/Documents/PaperCenterV2
+    
+/Users/zhb/Documents/PaperCenterV2/PaperCenterV2/Views/Properties/VariableEditView.swift:70:53: warning: left side of nil coalescing operator '??' has non-optional type 'Color', so the right side is never used
+                            .fill(Color(hex: color) ?? .purple)
+                                  ~~~~~~~~~~~~~~~~~~^~~~~~~~~~
+                                                   
+
+SwiftDriverJobDiscovery normal arm64 Compiling TagScope.swift, VariableScope.swift, VariableType.swift, MetadataNotifications.swift, PropertyOrdering.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+
+SwiftDriverJobDiscovery normal arm64 Compiling ListOptionsEditor.swift, PropertyScopeSelector.swift, PropertyTypeSelector.swift, TagColorPicker.swift, TagDisplayView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+
+SwiftDriverJobDiscovery normal arm64 Compiling Tag.swift, TagGroup.swift, Variable.swift, VariableAssignment.swift, DocCreationService.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+
+SwiftDriverJobDiscovery normal arm64 Compiling VariableListView.swift, MainTabView.swift, PlaceholderView.swift, PaperCenterV2App.swift, GeneratedAssetSymbols.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+
+SwiftDriverJobDiscovery normal arm64 Compiling DocRowView.swift, PDFBundleImportView.swift, PDFBundleListView.swift, PDFBundleRowView.swift, PropertiesManagementView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+
+SwiftDriverJobDiscovery normal arm64 Compiling MetadataFormattingService.swift, OCRSettings.swift, PDFImportService.swift, PropertyManagementService.swift, DocListViewModel.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
 
 SwiftDriverJobDiscovery normal arm64 Emitting module for PaperCenterV2 (in target 'PaperCenterV2' from project 'PaperCenterV2')
 
@@ -161,37 +418,25 @@ SwiftDriver\ Compilation\ Requirements PaperCenterV2 normal arm64 com.apple.xcod
     cd /Users/zhb/Documents/PaperCenterV2
     builtin-Swift-Compilation-Requirements -- /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name PaperCenterV2 -Onone -enforce-exclusivity\=checked @/Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/PaperCenterV2.SwiftFileList -DDEBUG -default-isolation\=MainActor -enable-bare-slash-regex -enable-upcoming-feature DisableOutwardActorInference -enable-upcoming-feature InferSendableFromCaptures -enable-upcoming-feature GlobalActorIsolatedTypesUsability -enable-upcoming-feature MemberImportVisibility -enable-upcoming-feature InferIsolatedConformances -enable-upcoming-feature NonisolatedNonsendingByDefault -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.0.sdk -target arm64-apple-ios17.0-simulator -g -module-cache-path /Users/zhb/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -Xfrontend -serialize-debugging-options -profile-coverage-mapping -profile-generate -enable-testing -index-store-path /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator -F /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator -emit-localized-strings -emit-localized-strings-path /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64 -c -j10 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/zhb/Library/Developer/Xcode/DerivedData/SDKStatCaches.noindex/iphonesimulator26.0-23A339-26257891a6c027eb51374368541b8346.sdkstatcache -output-file-map /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/PaperCenterV2-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/zhb/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -sdk-module-cache-path /Users/zhb/Library/Developer/Xcode/DerivedData/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/PaperCenterV2.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/zhb/Library/Developer/Xcode/DerivedData/ModuleCache.noindex/Session.modulevalidation -Xcc -I/Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/PaperCenterV2_const_extract_protocols.json -Xcc -iquote -Xcc /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/PaperCenterV2-generated-files.hmap -Xcc -I/Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/PaperCenterV2-own-target-headers.hmap -Xcc -I/Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/PaperCenterV2-all-target-headers.hmap -Xcc -iquote -Xcc /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/PaperCenterV2-project-headers.hmap -Xcc -I/Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/DerivedSources-normal/arm64 -Xcc -I/Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/DerivedSources/arm64 -Xcc -I/Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/PaperCenterV2-Swift.h -working-directory /Users/zhb/Documents/PaperCenterV2 -experimental-emit-module-separately -disable-cmo
 
-SwiftDriverJobDiscovery normal arm64 Compiling PlaceholderView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
-
-Copy /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator/PaperCenterV2.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/PaperCenterV2.swiftmodule (in target 'PaperCenterV2' from project 'PaperCenterV2')
+Copy /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator/PaperCenterV2.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/PaperCenterV2.swiftsourceinfo (in target 'PaperCenterV2' from project 'PaperCenterV2')
     cd /Users/zhb/Documents/PaperCenterV2
-    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/PaperCenterV2.swiftmodule /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator/PaperCenterV2.swiftmodule/arm64-apple-ios-simulator.swiftmodule
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/PaperCenterV2.swiftsourceinfo /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator/PaperCenterV2.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
 
 Copy /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator/PaperCenterV2.swiftmodule/arm64-apple-ios-simulator.abi.json /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/PaperCenterV2.abi.json (in target 'PaperCenterV2' from project 'PaperCenterV2')
     cd /Users/zhb/Documents/PaperCenterV2
     builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/PaperCenterV2.abi.json /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator/PaperCenterV2.swiftmodule/arm64-apple-ios-simulator.abi.json
 
-Copy /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator/PaperCenterV2.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/PaperCenterV2.swiftsourceinfo (in target 'PaperCenterV2' from project 'PaperCenterV2')
+Copy /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator/PaperCenterV2.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/PaperCenterV2.swiftmodule (in target 'PaperCenterV2' from project 'PaperCenterV2')
     cd /Users/zhb/Documents/PaperCenterV2
-    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/PaperCenterV2.swiftsourceinfo /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator/PaperCenterV2.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/PaperCenterV2.swiftmodule /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator/PaperCenterV2.swiftmodule/arm64-apple-ios-simulator.swiftmodule
 
-SwiftDriverJobDiscovery normal arm64 Compiling PropertyTypeSelector.swift, TagColorPicker.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+SwiftDriverJobDiscovery normal arm64 Compiling Doc.swift, NoteBlock.swift, Page.swift, PageGroup.swift, PageVersion.swift, PDFBundle.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
 
-SwiftDriverJobDiscovery normal arm64 Compiling ListOptionsEditor.swift, PropertyScopeSelector.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+SwiftDriverJobDiscovery normal arm64 Compiling PDFBundleListViewModel.swift, PDFImportViewModel.swift, PropertyManagementViewModel.swift, TagVariableAssignmentViewModel.swift, ColorExtension.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
 
-SwiftDriverJobDiscovery normal arm64 Compiling VariableEditView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+SwiftDriverJobDiscovery normal arm64 Compiling TagEditView.swift, TagGroupEditView.swift, TagGroupListView.swift, TagListView.swift, VariableEditView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
 
-SwiftDriverJobDiscovery normal arm64 Compiling TagEditView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
-
-SwiftDriverJobDiscovery normal arm64 Compiling VariableListView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
-
-SwiftDriverJobDiscovery normal arm64 Compiling TagGroupEditView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
-
-SwiftDriverJobDiscovery normal arm64 Compiling TagGroupManagementView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
-
-SwiftDriverJobDiscovery normal arm64 Compiling TagListView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
-
-SwiftDriverJobDiscovery normal arm64 Compiling OCRDebugView.swift, PropertiesManagementView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
+SwiftDriverJobDiscovery normal arm64 Compiling TagVariableAssignmentView.swift, VariableDisplayView.swift, OCRDebugView.swift, DocCreationView.swift, DocListView.swift (in target 'PaperCenterV2' from project 'PaperCenterV2')
 
 SwiftDriver\ Compilation PaperCenterV2 normal arm64 com.apple.xcode.tools.swift.compiler (in target 'PaperCenterV2' from project 'PaperCenterV2')
     cd /Users/zhb/Documents/PaperCenterV2
@@ -217,14 +462,14 @@ CopySwiftLibs /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqs
 ExtractAppIntentsMetadata (in target 'PaperCenterV2' from project 'PaperCenterV2')
     cd /Users/zhb/Documents/PaperCenterV2
     /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --module-name PaperCenterV2 --sdk-root /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.0.sdk --xcode-version 17A400 --platform-family iOS --deployment-target 17.0 --bundle-identifier hanbin.PaperCenterV2 --output /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator/PaperCenterV2.app --target-triple arm64-apple-ios17.0-simulator --binary-file /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator/PaperCenterV2.app/PaperCenterV2 --dependency-file /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/PaperCenterV2_dependency_info.dat --stringsdata-file /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/PaperCenterV2.SwiftFileList --metadata-file-list /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/PaperCenterV2.DependencyMetadataFileList --static-metadata-file-list /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/PaperCenterV2.DependencyStaticMetadataFileList --swift-const-vals-list /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/PaperCenterV2.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
-2025-11-20 19:27:44.985 appintentsmetadataprocessor[32177:1021289] Starting appintentsmetadataprocessor export
-2025-11-20 19:27:44.986 appintentsmetadataprocessor[32177:1021289] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+2025-11-20 20:35:47.097 appintentsmetadataprocessor[37882:1109524] Starting appintentsmetadataprocessor export
+2025-11-20 20:35:47.098 appintentsmetadataprocessor[37882:1109524] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
 
 AppIntentsSSUTraining (in target 'PaperCenterV2' from project 'PaperCenterV2')
     cd /Users/zhb/Documents/PaperCenterV2
     /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator/PaperCenterV2.app/Info.plist --temp-dir-path /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/ssu --bundle-id hanbin.PaperCenterV2 --product-path /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator/PaperCenterV2.app --extracted-metadata-path /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator/PaperCenterV2.app/Metadata.appintents --metadata-file-list /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/PaperCenterV2.DependencyMetadataFileList --archive-ssu-assets
-2025-11-20 19:27:44.997 appintentsnltrainingprocessor[32178:1021291] Parsing options for appintentsnltrainingprocessor
-2025-11-20 19:27:44.997 appintentsnltrainingprocessor[32178:1021291] No AppShortcuts found - Skipping.
+2025-11-20 20:35:47.109 appintentsnltrainingprocessor[37883:1109526] Parsing options for appintentsnltrainingprocessor
+2025-11-20 20:35:47.110 appintentsnltrainingprocessor[37883:1109526] No AppShortcuts found - Skipping.
 
 CodeSign /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator/PaperCenterV2.app/PaperCenterV2.debug.dylib (in target 'PaperCenterV2' from project 'PaperCenterV2')
     cd /Users/zhb/Documents/PaperCenterV2
@@ -251,6 +496,12 @@ CodeSign /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszsca
 Validate /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator/PaperCenterV2.app (in target 'PaperCenterV2' from project 'PaperCenterV2')
     cd /Users/zhb/Documents/PaperCenterV2
     builtin-validationUtility /Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Products/Debug-iphonesimulator/PaperCenterV2.app -shallow-bundle -infoplist-subpath Info.plist
+
+note: Removed stale file '/Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/TagGroupManagementView.o'
+
+note: Removed stale file '/Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/TagGroupManagementView.stringsdata'
+
+note: Removed stale file '/Users/zhb/Library/Developer/Xcode/DerivedData/PaperCenterV2-ggvqsszscayaowbjhsvmhugfvmgq/Build/Intermediates.noindex/PaperCenterV2.build/Debug-iphonesimulator/PaperCenterV2.build/Objects-normal/arm64/TagGroupManagementView.swiftconstvalues'
 
 ** BUILD SUCCEEDED **
 

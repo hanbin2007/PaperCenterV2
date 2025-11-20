@@ -29,6 +29,10 @@ struct TagListView: View {
         PropertyManagementViewModel(modelContext: modelContext)
     }
 
+    init(filterTagGroup: TagGroup? = nil) {
+        self.filterTagGroup = filterTagGroup
+    }
+
     private var filteredTags: [Tag] {
         var tags = allTags
 
@@ -48,10 +52,6 @@ struct TagListView: View {
         }
 
         return tags.sortedByManualOrder()
-    }
-
-    init(filterTagGroup: TagGroup? = nil) {
-        self.filterTagGroup = filterTagGroup
     }
 
     var body: some View {
@@ -202,9 +202,13 @@ private struct TagRow: View {
                     .font(.headline)
 
                 HStack(spacing: 8) {
-                    Label(tag.scope.displayName, systemImage: tag.scope.icon)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    HStack(spacing: 4) {
+                        Image(systemName: tag.scope.icon)
+                            .font(.caption2)
+                        Text(tag.scope.displayName)
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                     TagGroupBadge(name: tag.tagGroup?.name ?? "Ungrouped")
                 }
             }
