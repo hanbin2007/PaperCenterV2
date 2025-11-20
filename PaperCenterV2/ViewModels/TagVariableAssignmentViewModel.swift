@@ -28,7 +28,7 @@ enum VariableValue: Equatable {
 /// MVVM ViewModel handling tag/variable selection and persistence.
 @MainActor
 @Observable
-final class TagVariableAssignmentViewModel {
+final class TagVariableAssignmentViewModel: NSObject {
 
     // MARK: - Types
 
@@ -69,8 +69,19 @@ final class TagVariableAssignmentViewModel {
         self.entityType = entityType
         self.propertyService = PropertyManagementService(modelContext: modelContext)
         self.target = target
+        super.init()
         loadAvailable()
         syncFromTarget()
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(metadataCatalogDidChange),
+            name: .metadataCatalogDidChange,
+            object: nil
+        )
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self, name: .metadataCatalogDidChange, object: nil)
     }
 
     // MARK: - Loading
@@ -78,6 +89,10 @@ final class TagVariableAssignmentViewModel {
     func refresh() {
         loadAvailable()
         syncFromTarget()
+    }
+
+    @objc private func metadataCatalogDidChange() {
+        refresh()
     }
 
     private func loadAvailable() {

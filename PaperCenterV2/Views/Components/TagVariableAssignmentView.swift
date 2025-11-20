@@ -92,13 +92,19 @@ struct TagVariableAssignmentView: View {
                 ProgressView()
                     .padding()
                     .onAppear {
-                        propertyViewModel = PropertyManagementViewModel(modelContext: modelContext)
+                        propertyViewModel = PropertyManagementViewModel(
+                            modelContext: modelContext,
+                            assignmentViewModel: viewModel
+                        )
                     }
             }
         }
         .onAppear {
             if propertyViewModel == nil {
-                propertyViewModel = PropertyManagementViewModel(modelContext: modelContext)
+                propertyViewModel = PropertyManagementViewModel(
+                    modelContext: modelContext,
+                    assignmentViewModel: viewModel
+                )
             }
         }
     }

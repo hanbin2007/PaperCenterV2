@@ -47,6 +47,10 @@ final class PropertyManagementService {
         self.modelContext = modelContext
     }
 
+    private func notifyMetadataChanged() {
+        NotificationCenter.default.post(name: .metadataCatalogDidChange, object: nil)
+    }
+
     // MARK: - TagGroup Operations
 
     /// Fetch all tag groups
@@ -116,6 +120,16 @@ final class PropertyManagementService {
         if !errors.isEmpty {
             print("Batch delete completed with errors: \(errors.joined(separator: ", "))")
         }
+    }
+
+    /// Persist manual ordering for tag groups
+    func reorderTagGroups(_ orderedGroups: [TagGroup]) throws {
+        for (index, group) in orderedGroups.enumerated() {
+            group.sortIndex = index
+            group.touch()
+        }
+        try modelContext.save()
+        notifyMetadataChanged()
     }
 
     // MARK: - Tag Operations
@@ -247,6 +261,21 @@ final class PropertyManagementService {
         }
 
         try modelContext.save()
+    }
+
+    /// Persist manual ordering for tags within a tag group (or ungrouped)
+    func reorderTags(_ orderedTags: [Tag], tagGroup: TagGroup?) throws {
+        for (index, tag) in orderedTags.enumerated() {
+            tag.sortIndex = index
+            if let tagGroup {
+                tag.tagGroup = tagGroup
+            } else if tag.tagGroup != nil {
+                tag.tagGroup = nil
+            }
+            tag.touch()
+        }
+        try modelContext.save()
+        notifyMetadataChanged()
     }
 
     /// Bulk create tags in a group
@@ -410,6 +439,16 @@ final class PropertyManagementService {
         if !errors.isEmpty {
             print("Batch delete completed with errors: \(errors.joined(separator: ", "))")
         }
+    }
+
+    /// Persist manual ordering for variables
+    func reorderVariables(_ orderedVariables: [Variable]) throws {
+        for (index, variable) in orderedVariables.enumerated() {
+            variable.sortIndex = index
+            variable.touch()
+        }
+        try modelContext.save()
+        notifyMetadataChanged()
     }
 
     // MARK: - Ordering Helpers

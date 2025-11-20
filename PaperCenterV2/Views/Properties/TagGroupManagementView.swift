@@ -59,6 +59,8 @@ struct TagGroupManagementView: View {
                             }
                         }
                 }
+                .onMove(perform: moveTags)
+                .moveDisabled(!canReorderTags)
             }
         }
         .environment(\.editMode, isEditMode ? .constant(.active) : .constant(.inactive))
@@ -134,6 +136,17 @@ struct TagGroupManagementView: View {
         let tagsToDelete = filteredTags.filter { selectedTags.contains($0.id) }
         viewModel.batchDeleteTags(tagsToDelete)
         selectedTags.removeAll()
+    }
+
+    private var canReorderTags: Bool {
+        searchText.isEmpty
+    }
+
+    private func moveTags(from source: IndexSet, to destination: Int) {
+        guard canReorderTags else { return }
+        var ordered = filteredTags
+        ordered.move(fromOffsets: source, toOffset: destination)
+        viewModel.reorderTags(in: tagGroup, orderedTags: ordered)
     }
 }
 

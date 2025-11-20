@@ -18,6 +18,7 @@ final class PropertyManagementViewModel {
 
     private let modelContext: ModelContext
     private let service: PropertyManagementService
+    private weak var assignmentViewModel: TagVariableAssignmentViewModel?
 
     /// Current error message to display
     var errorMessage: String?
@@ -42,9 +43,10 @@ final class PropertyManagementViewModel {
 
     // MARK: - Initialization
 
-    init(modelContext: ModelContext) {
+    init(modelContext: ModelContext, assignmentViewModel: TagVariableAssignmentViewModel? = nil) {
         self.modelContext = modelContext
         self.service = PropertyManagementService(modelContext: modelContext)
+        self.assignmentViewModel = assignmentViewModel
     }
 
     // MARK: - TagGroup Operations
@@ -114,6 +116,19 @@ final class PropertyManagementViewModel {
         do {
             try service.batchDeleteTagGroups(tagGroups)
             successMessage = "Deleted \(tagGroups.count) tag group(s)"
+        } catch {
+            handleError(error)
+        }
+    }
+
+    func refreshAssignmentState() {
+        assignmentViewModel?.refresh()
+    }
+
+    func reorderTagGroups(_ orderedGroups: [TagGroup]) {
+        guard !orderedGroups.isEmpty else { return }
+        do {
+            try service.reorderTagGroups(orderedGroups)
         } catch {
             handleError(error)
         }
@@ -202,6 +217,15 @@ final class PropertyManagementViewModel {
         do {
             try service.batchDeleteTags(tags)
             successMessage = "Deleted \(tags.count) tag(s)"
+        } catch {
+            handleError(error)
+        }
+    }
+
+    func reorderTags(in tagGroup: TagGroup?, orderedTags: [Tag]) {
+        guard !orderedTags.isEmpty else { return }
+        do {
+            try service.reorderTags(orderedTags, tagGroup: tagGroup)
         } catch {
             handleError(error)
         }
@@ -313,6 +337,15 @@ final class PropertyManagementViewModel {
         do {
             try service.batchDeleteVariables(variables)
             successMessage = "Deleted \(variables.count) variable(s)"
+        } catch {
+            handleError(error)
+        }
+    }
+
+    func reorderVariables(_ orderedVariables: [Variable]) {
+        guard !orderedVariables.isEmpty else { return }
+        do {
+            try service.reorderVariables(orderedVariables)
         } catch {
             handleError(error)
         }

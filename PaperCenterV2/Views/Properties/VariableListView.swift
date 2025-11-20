@@ -67,6 +67,8 @@ struct VariableListView: View {
                             }
                         }
                 }
+                .onMove(perform: moveVariables)
+                .moveDisabled(!canReorderVariables)
             }
         }
         .environment(\.editMode, isEditMode ? .constant(.active) : .constant(.inactive))
@@ -176,6 +178,17 @@ struct VariableListView: View {
         let variablesToDelete = filteredVariables.filter { selectedVariables.contains($0.id) }
         viewModel.batchDeleteVariables(variablesToDelete)
         selectedVariables.removeAll()
+    }
+
+    private var canReorderVariables: Bool {
+        filterScope == nil && filterType == nil && searchText.isEmpty
+    }
+
+    private func moveVariables(from source: IndexSet, to destination: Int) {
+        guard canReorderVariables else { return }
+        var ordered = filteredVariables
+        ordered.move(fromOffsets: source, toOffset: destination)
+        viewModel.reorderVariables(ordered)
     }
 }
 
