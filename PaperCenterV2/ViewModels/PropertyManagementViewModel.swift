@@ -134,6 +134,15 @@ final class PropertyManagementViewModel {
         }
     }
 
+    func duplicateTagGroup(_ tagGroup: TagGroup) {
+        do {
+            _ = try service.duplicateTagGroup(tagGroup)
+            successMessage = "Duplicated '\(tagGroup.name)'"
+        } catch {
+            handleError(error)
+        }
+    }
+
     // MARK: - Tag Operations
 
     func fetchAllTags() -> [Tag] {

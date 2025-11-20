@@ -122,6 +122,44 @@ final class PropertyManagementService {
         }
     }
 
+    /// Duplicate a tag group along with its tags
+    func duplicateTagGroup(_ tagGroup: TagGroup) throws -> TagGroup {
+        var candidateName = "\(tagGroup.name) Copy"
+        var suffix = 2
+        while true {
+            do {
+                try validateTagGroupNameUnique(candidateName)
+                break
+            } catch {
+                candidateName = "\(tagGroup.name) Copy \(suffix)"
+                suffix += 1
+            }
+        }
+
+        let newGroup = TagGroup(
+            name: candidateName,
+            sortIndex: try nextTagGroupSortIndex()
+        )
+        modelContext.insert(newGroup)
+
+        if let tags = tagGroup.tags?.sortedByManualOrder() {
+            for (index, original) in tags.enumerated() {
+                let clonedTag = Tag(
+                    name: original.name,
+                    color: original.color,
+                    scope: original.scope,
+                    tagGroup: newGroup,
+                    sortIndex: index
+                )
+                modelContext.insert(clonedTag)
+            }
+        }
+
+        try modelContext.save()
+        notifyMetadataChanged()
+        return newGroup
+    }
+
     /// Persist manual ordering for tag groups
     func reorderTagGroups(_ orderedGroups: [TagGroup]) throws {
         for (index, group) in orderedGroups.enumerated() {

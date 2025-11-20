@@ -205,21 +205,27 @@ private struct TagRow: View {
                     Label(tag.scope.displayName, systemImage: tag.scope.icon)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-
-                    if let tagGroup = tag.tagGroup {
-                        Text("•")
-                            .foregroundStyle(.secondary)
-                            .font(.caption)
-                        Text(tagGroup.name)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
+                    TagGroupBadge(name: tag.tagGroup?.name ?? "Ungrouped")
                 }
             }
 
             Spacer()
         }
         .padding(.vertical, 4)
+    }
+}
+
+private struct TagGroupBadge: View {
+    let name: String
+
+    var body: some View {
+        Text(name)
+            .font(.caption2)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(.thinMaterial)
+            .foregroundStyle(.primary)
+            .clipShape(Capsule())
     }
 }
 

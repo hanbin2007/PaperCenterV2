@@ -45,21 +45,30 @@ struct TagGroupListView: View {
                 }
             } else {
                 ForEach(filteredTagGroups) { tagGroup in
-                    if isEditMode {
-                        TagGroupRow(
-                            tagGroup: tagGroup,
-                            onEdit: { tagGroupToEdit = tagGroup }
-                        )
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            toggleSelection(tagGroup)
-                        }
-                    } else {
-                        NavigationLink(value: tagGroup) {
+                    Group {
+                        if isEditMode {
                             TagGroupRow(
                                 tagGroup: tagGroup,
                                 onEdit: { tagGroupToEdit = tagGroup }
                             )
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                toggleSelection(tagGroup)
+                            }
+                        } else {
+                            NavigationLink(value: tagGroup) {
+                                TagGroupRow(
+                                    tagGroup: tagGroup,
+                                    onEdit: { tagGroupToEdit = tagGroup }
+                                )
+                            }
+                        }
+                    }
+                    .contextMenu {
+                        Button {
+                            duplicate(tagGroup)
+                        } label: {
+                            Label("Duplicate", systemImage: "doc.on.doc")
                         }
                     }
                 }
@@ -142,6 +151,11 @@ struct TagGroupListView: View {
         var ordered = filteredTagGroups
         ordered.move(fromOffsets: source, toOffset: destination)
         viewModel.reorderTagGroups(ordered)
+        viewModel.refreshAssignmentState()
+    }
+
+    private func duplicate(_ tagGroup: TagGroup) {
+        viewModel.duplicateTagGroup(tagGroup)
         viewModel.refreshAssignmentState()
     }
 }

@@ -15,6 +15,7 @@ struct DocListView: View {
 
     @State private var viewModel: DocListViewModel?
     @State private var showingCreateDoc = false
+    @State private var errorMessage: String?
 
     var body: some View {
         NavigationStack {
@@ -28,6 +29,19 @@ struct DocListView: View {
                         formattedTags: formattedTags,
                         formattedVariables: formattedVars
                     )
+                    .contextMenu {
+                        Button {
+                            duplicate(doc)
+                        } label: {
+                            Label("Duplicate", systemImage: "doc.on.doc")
+                        }
+
+                        Button(role: .destructive) {
+                            deleteDoc(doc)
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
                 }
                 .onDelete(perform: deleteDocs)
             }
@@ -49,6 +63,19 @@ struct DocListView: View {
                     viewModel = DocListViewModel(modelContext: modelContext)
                 }
             }
+            .alert(
+                "Operation Failed",
+                isPresented: Binding(
+                    get: { errorMessage != nil },
+                    set: { if !$0 { errorMessage = nil } }
+                )
+            ) {
+                Button("OK", role: .cancel) {
+                    errorMessage = nil
+                }
+            } message: {
+                Text(errorMessage ?? "")
+            }
         }
     }
 
@@ -57,6 +84,19 @@ struct DocListView: View {
 
         for index in offsets {
             viewModel.deleteDoc(docs[index])
+        }
+    }
+
+    private func deleteDoc(_ doc: Doc) {
+        viewModel?.deleteDoc(doc)
+    }
+
+    private func duplicate(_ doc: Doc) {
+        guard let viewModel = viewModel else { return }
+        do {
+            try viewModel.duplicateDoc(doc)
+        } catch {
+            errorMessage = error.localizedDescription
         }
     }
 }
