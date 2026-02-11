@@ -72,11 +72,15 @@ struct PDFBundleImportView: View {
 
                 if !viewModel.pagePreviews.isEmpty {
                     Section {
-                        PageSelectionGrid(viewModel: viewModel)
+                        NavigationLink {
+                            PageSelectionView(viewModel: viewModel)
+                        } label: {
+                            PageSelectionSummary(viewModel: viewModel)
+                        }
                     } header: {
                         Text("Page Selection")
                     } footer: {
-                        Text("Choose which Display PDF pages to import. Highlighted chips show available variants per page.")
+                        Text("Tap to review thumbnails and choose which pages to import.")
                             .font(.caption)
                     }
                 }
@@ -125,21 +129,19 @@ struct PDFBundleImportView: View {
             .navigationTitle("Import PDF Bundle")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
+                ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
                         dismiss()
                     }
-                    .buttonStyle(.plain)
                 }
 
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .confirmationAction) {
                     Button("Import") {
                         Task {
                             await viewModel.importBundle()
                             dismiss()
                         }
                     }
-                    .buttonStyle(.plain)
                     .disabled(!viewModel.canImport)
                 }
             }
@@ -182,9 +184,9 @@ struct PDFBundleImportView: View {
     }
 }
 
-// MARK: - Page Selection Grid
+// MARK: - Page Selection Views
 
-private struct PageSelectionGrid: View {
+private struct PageSelectionView: View {
     @Bindable var viewModel: PDFImportViewModel
 
     private var columns: [GridItem] {
@@ -192,77 +194,114 @@ private struct PageSelectionGrid: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("Selected \(viewModel.selectedPageCount) of \(viewModel.totalPageCount)")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                Spacer()
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                selectionToolbar
+
+                LazyVGrid(columns: columns, spacing: 12) {
+                    ForEach(viewModel.pagePreviews) { page in
+                        PageSelectionCard(
+                            page: page,
+                            isSelected: viewModel.isSelected(page),
+                            onToggleSelection: { viewModel.toggleSelection(for: page) }
+                        )
+                    }
+                }
+            }
+            .padding()
+        }
+        .navigationTitle("Select Pages")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private var selectionToolbar: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Selected \(viewModel.selectedPageCount) of \(viewModel.totalPageCount)")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: 12) {
                 Button("Select All") {
                     viewModel.selectAllPages()
                 }
+                .buttonStyle(.bordered)
                 .disabled(viewModel.selectedPageCount == viewModel.totalPageCount)
 
                 Button("Clear All") {
                     viewModel.clearSelection()
                 }
+                .buttonStyle(.bordered)
                 .disabled(viewModel.selectedPageCount == 0)
             }
-
-            LazyVGrid(columns: columns, spacing: 12) {
-                ForEach(viewModel.pagePreviews) { page in
-                    PageSelectionCard(
-                        page: page,
-                        isSelected: viewModel.isSelected(page),
-                        action: { viewModel.toggleSelection(for: page) }
-                    )
-                }
-            }
         }
-        .padding(.vertical, 4)
+    }
+}
+
+private struct PageSelectionSummary: View {
+    @Bindable var viewModel: PDFImportViewModel
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Selected Pages")
+                    .font(.headline)
+                Text("\(viewModel.selectedPageCount) of \(viewModel.totalPageCount)")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Image(systemName: "chevron.right")
+                .foregroundStyle(.tertiary)
+        }
+        .padding(.vertical, 6)
     }
 }
 
 private struct PageSelectionCard: View {
     let page: PDFImportViewModel.ImportPage
     let isSelected: Bool
-    let action: () -> Void
+    let onToggleSelection: () -> Void
 
     var body: some View {
-        Button(action: action) {
-            VStack(alignment: .leading, spacing: 8) {
-                ZStack(alignment: .topTrailing) {
-                    pagePreview
-                        .frame(maxWidth: .infinity)
-                        .aspectRatio(3/4, contentMode: .fit)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(isSelected ? Color.accentColor : Color.secondary.opacity(0.2), lineWidth: isSelected ? 2 : 1)
-                        )
-
-                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                        .font(.title3)
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
-                        .padding(8)
-                }
-
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
                 Text("Page \(page.pageNumber)")
                     .font(.subheadline)
-                    .fontWeight(.medium)
-
-                HStack(spacing: 6) {
-                    VariantChip(title: "Display", systemImage: "doc.viewfinder", isActive: true)
-                    VariantChip(title: "Original", systemImage: "doc.richtext", isActive: page.hasOriginal)
-                    VariantChip(title: "OCR", systemImage: "text.viewfinder", isActive: page.hasOCR)
+                    .fontWeight(.semibold)
+                Spacer()
+                Button(action: onToggleSelection) {
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                        .font(.title3)
+                        .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
                 }
+                .buttonStyle(.plain)
             }
-            .padding(10)
-            .background(Color(.secondarySystemBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 14))
+
+            NavigationLink {
+                PagePreviewDetailView(page: page)
+            } label: {
+                pagePreview
+                    .frame(height: 110)
+                    .frame(maxWidth: .infinity)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                    )
+            }
+            .buttonStyle(.plain)
+
+            HStack(spacing: 6) {
+                VariantChip(title: "Display", systemImage: "doc.viewfinder", isActive: true)
+                VariantChip(title: "Original", systemImage: "doc.richtext", isActive: page.hasOriginal)
+                VariantChip(title: "OCR", systemImage: "text.viewfinder", isActive: page.hasOCR)
+            }
         }
-        .buttonStyle(.plain)
+        .padding(12)
+        .background(Color(.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .contentShape(RoundedRectangle(cornerRadius: 14))
+        .onTapGesture { onToggleSelection() }
     }
 
     @ViewBuilder
@@ -272,13 +311,13 @@ private struct PageSelectionCard: View {
                 .resizable()
                 .scaledToFill()
         } else {
-            ZStack {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.gray.opacity(0.15))
-                Text("\(page.pageNumber)")
-                    .font(.title)
-                    .foregroundStyle(.secondary)
-            }
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.gray.opacity(0.15))
+                .overlay(
+                    Text("\(page.pageNumber)")
+                        .font(.title)
+                        .foregroundStyle(.secondary)
+                )
         }
     }
 }
@@ -289,13 +328,66 @@ private struct VariantChip: View {
     let isActive: Bool
 
     var body: some View {
-        Label(title, systemImage: systemImage)
-            .font(.caption2)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(isActive ? Color.accentColor.opacity(0.15) : Color.secondary.opacity(0.1))
-            .foregroundStyle(isActive ? Color.accentColor : Color.secondary)
-            .clipShape(Capsule())
+        HStack(spacing: 4) {
+            Image(systemName: systemImage)
+                .font(.caption2)
+            Text(title)
+                .font(.caption2)
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
+        .background(isActive ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.08))
+        .foregroundStyle(isActive ? Color.accentColor : Color.secondary)
+        .clipShape(Capsule())
+    }
+}
+
+private struct PagePreviewDetailView: View {
+    let page: PDFImportViewModel.ImportPage
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 24) {
+                pagePreview
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+                    )
+
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Variants")
+                        .font(.headline)
+                    HStack(spacing: 8) {
+                        VariantChip(title: "Display", systemImage: "doc.viewfinder", isActive: true)
+                        VariantChip(title: "Original", systemImage: "doc.richtext", isActive: page.hasOriginal)
+                        VariantChip(title: "OCR", systemImage: "text.viewfinder", isActive: page.hasOCR)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding()
+        }
+        .navigationTitle("Page \(page.pageNumber)")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    @ViewBuilder
+    private var pagePreview: some View {
+        if let thumbnail = page.thumbnail {
+            Image(uiImage: thumbnail)
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: 360)
+        } else {
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.gray.opacity(0.2))
+                .frame(height: 320)
+                .overlay(
+                    Text("No Preview")
+                        .foregroundStyle(.secondary)
+                )
+        }
     }
 }
 
@@ -350,13 +442,15 @@ extension ModelContainer {
             PageGroup.self,
             Page.self,
             PageVersion.self,
+            NoteBlock.self,
             Tag.self,
             TagGroup.self,
             Variable.self,
             PDFBundleVariableAssignment.self,
             DocVariableAssignment.self,
             PageGroupVariableAssignment.self,
-            PageVariableAssignment.self
+            PageVariableAssignment.self,
+            NoteBlockVariableAssignment.self
         ])
         let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
         return try! ModelContainer(for: schema, configurations: configuration)

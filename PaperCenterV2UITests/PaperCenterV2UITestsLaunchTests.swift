@@ -2,7 +2,7 @@
 //  PaperCenterV2UITestsLaunchTests.swift
 //  PaperCenterV2UITests
 //
-//  Created by zhb on 2025/11/9.
+//  Launch-level sanity checks.
 //
 
 import XCTest
@@ -22,12 +22,6 @@ final class PaperCenterV2UITestsLaunchTests: XCTestCase {
         let app = XCUIApplication()
         app.launch()
 
-        // Insert steps here to perform after app launch but before taking a screenshot,
-        // such as logging into a test account or navigating somewhere in the app
-
-        let attachment = XCTAttachment(screenshot: app.screenshot())
-        attachment.name = "Launch Screen"
-        attachment.lifetime = .keepAlways
-        add(attachment)
+        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 5))
     }
 }

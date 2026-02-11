@@ -596,6 +596,12 @@ final class PropertyManagementService {
             return true
         }
 
+        let noteBlockDescriptor = FetchDescriptor<NoteBlockVariableAssignment>()
+        let noteBlockAssignments = try modelContext.fetch(noteBlockDescriptor)
+        if noteBlockAssignments.contains(where: { $0.variable?.id == variableID }) {
+            return true
+        }
+
         return false
     }
 }

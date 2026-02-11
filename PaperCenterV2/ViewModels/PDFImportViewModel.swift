@@ -170,15 +170,15 @@ final class PDFImportViewModel {
             return
         }
 
-        guard let displayDocument = PDFDocument(url: displayURL) else {
+        guard let displayDocument = makeDocument(from: displayURL) else {
             pagePreviews = []
             selectedPageNumbers.removeAll()
             errorMessage = "Unable to load Display PDF"
             return
         }
 
-        let originalDocument = originalPDFURL.flatMap { PDFDocument(url: $0) }
-        let ocrDocument = ocrPDFURL.flatMap { PDFDocument(url: $0) }
+        let originalDocument = makeDocument(from: originalPDFURL)
+        let ocrDocument = makeDocument(from: ocrPDFURL)
 
         var previews: [ImportPage] = []
         let pageCount = displayDocument.pageCount
@@ -207,5 +207,16 @@ final class PDFImportViewModel {
             let intersection = selectedPageNumbers.intersection(availableNumbers)
             selectedPageNumbers = intersection.isEmpty ? availableNumbers : intersection
         }
+    }
+
+    private func makeDocument(from url: URL?) -> PDFDocument? {
+        guard let url else { return nil }
+        let accessed = url.startAccessingSecurityScopedResource()
+        defer {
+            if accessed {
+                url.stopAccessingSecurityScopedResource()
+            }
+        }
+        return PDFDocument(url: url)
     }
 }

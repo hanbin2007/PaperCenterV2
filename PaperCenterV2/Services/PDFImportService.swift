@@ -163,9 +163,19 @@ final class PDFImportService {
         // Copy file to sandbox
         let targetURL = bundleDir.appendingPathComponent(targetFilename)
 
-        // Remove existing file if present
+        // Never replace an existing variant on an existing bundle.
+        // Replacing files would invalidate historical Page/PageVersion references.
+        if bundle != nil, targetBundle.path(for: type) != nil {
+            throw PDFImportError.bundleVariantAlreadyExists
+        }
+
+        // Remove existing file only for brand-new bundles.
         if fileManager.fileExists(atPath: targetURL.path) {
-            try fileManager.removeItem(at: targetURL)
+            if bundle == nil {
+                try fileManager.removeItem(at: targetURL)
+            } else {
+                throw PDFImportError.bundleVariantAlreadyExists
+            }
         }
 
         // Copy the file
@@ -436,6 +446,7 @@ enum PDFImportError: LocalizedError {
     case invalidFileType
     case invalidPDF
     case bundleInUse
+    case bundleVariantAlreadyExists
     case copyFailed
     case noSelectedPages
 
@@ -449,6 +460,8 @@ enum PDFImportError: LocalizedError {
             return "PDF file is corrupted or unreadable"
         case .bundleInUse:
             return "Cannot delete bundle: still referenced by pages"
+        case .bundleVariantAlreadyExists:
+            return "This PDF type already exists in the bundle. Replacing existing files is blocked to protect historical references."
         case .copyFailed:
             return "Failed to copy PDF file to app storage"
         case .noSelectedPages:

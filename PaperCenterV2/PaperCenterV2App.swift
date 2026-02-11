@@ -18,6 +18,7 @@ struct PaperCenterV2App: App {
             PageVersion.self,
             PageGroup.self,
             Doc.self,
+            NoteBlock.self,
             // Metadata models
             Tag.self,
             TagGroup.self,
@@ -27,6 +28,7 @@ struct PaperCenterV2App: App {
             DocVariableAssignment.self,
             PageGroupVariableAssignment.self,
             PageVariableAssignment.self,
+            NoteBlockVariableAssignment.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 

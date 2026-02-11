@@ -49,6 +49,7 @@ final class TagVariableAssignmentViewModel: NSObject {
         case doc(Doc)
         case pageGroup(PageGroup)
         case page(Page)
+        case noteBlock(NoteBlock)
     }
 
     // MARK: - Public State
@@ -236,6 +237,32 @@ final class TagVariableAssignmentViewModel: NSObject {
                 }
                 selectedVariableIDs = Set(variableValues.keys)
             }
+        case .noteBlock(let noteBlock):
+            selectedTagIDs = Set(noteBlock.tags?.map { $0.id } ?? [])
+            if let assignments = noteBlock.variableAssignments {
+                variableValues = assignments.reduce(into: [:]) { dict, assignment in
+                    guard let variable = assignment.variable else { return }
+                    switch variable.type {
+                    case .int:
+                        if let value = assignment.intValue {
+                            dict[variable.id] = .int(value)
+                        }
+                    case .list:
+                        if let value = assignment.listValue {
+                            dict[variable.id] = .list(value)
+                        }
+                    case .text:
+                        if let value = assignment.textValue, !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            dict[variable.id] = .text(value)
+                        }
+                    case .date:
+                        if let value = assignment.dateValue {
+                            dict[variable.id] = .date(value)
+                        }
+                    }
+                }
+                selectedVariableIDs = Set(variableValues.keys)
+            }
         }
     }
 
@@ -280,6 +307,12 @@ final class TagVariableAssignmentViewModel: NSObject {
                     add(tag: tag, to: &page.tags)
                 } else {
                     remove(tag: tag, from: &page.tags)
+                }
+            case .noteBlock(let noteBlock):
+                if selecting {
+                    add(tag: tag, to: &noteBlock.tags)
+                } else {
+                    remove(tag: tag, from: &noteBlock.tags)
                 }
             }
             try modelContext.save()
@@ -349,6 +382,8 @@ final class TagVariableAssignmentViewModel: NSObject {
                     add(tag: created, to: &group.tags)
                 case .page(let page):
                     add(tag: created, to: &page.tags)
+                case .noteBlock(let noteBlock):
+                    add(tag: created, to: &noteBlock.tags)
                 }
                 try modelContext.save()
             }
@@ -499,6 +534,14 @@ final class TagVariableAssignmentViewModel: NSObject {
                 let value = variableValues[variable.id]
                 try? persistVariable(variable, value: value, target: target)
             }
+        case .noteBlock(let noteBlock):
+            let tags = availableTags.filter { selectedTagIDs.contains($0.id) }
+            noteBlock.tags = tags
+            let selectedVars = availableVariables.filter { selectedVariableIDs.contains($0.id) }
+            for variable in selectedVars {
+                let value = variableValues[variable.id]
+                try? persistVariable(variable, value: value, target: target)
+            }
         }
     }
 
@@ -566,6 +609,17 @@ final class TagVariableAssignmentViewModel: NSObject {
             assignment?.listValue = value?.listValue
             assignment?.textValue = value?.textValue
             assignment?.dateValue = value?.dateValue
+        case .noteBlock(let noteBlock):
+            var assignment = noteBlock.variableAssignments?.first(where: { $0.variable?.id == variable.id })
+            if assignment == nil {
+                assignment = NoteBlockVariableAssignment(variable: variable, noteBlock: noteBlock)
+                if noteBlock.variableAssignments == nil { noteBlock.variableAssignments = [] }
+                noteBlock.variableAssignments?.append(assignment!)
+            }
+            assignment?.intValue = value?.intValue
+            assignment?.listValue = value?.listValue
+            assignment?.textValue = value?.textValue
+            assignment?.dateValue = value?.dateValue
         }
     }
 
@@ -581,6 +635,8 @@ final class TagVariableAssignmentViewModel: NSObject {
             group.variableAssignments?.removeAll { $0.variable?.id == variable.id }
         case .page(let page):
             page.variableAssignments?.removeAll { $0.variable?.id == variable.id }
+        case .noteBlock(let noteBlock):
+            noteBlock.variableAssignments?.removeAll { $0.variable?.id == variable.id }
         }
     }
 
