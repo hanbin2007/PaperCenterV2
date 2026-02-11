@@ -32,6 +32,15 @@ final class PageVersion {
     /// This is a JSON-encoded representation of the metadata state
     var metadataSnapshot: Data?
 
+    /// Whether tag metadata was inherited from the previous version at creation
+    var inheritedTagMetadata: Bool?
+
+    /// Whether variable metadata was inherited from the previous version at creation
+    var inheritedVariableMetadata: Bool?
+
+    /// Whether note blocks were inherited from the previous version at creation
+    var inheritedNoteBlocks: Bool?
+
     // MARK: - Relationships
 
     /// Parent page that owns this version
@@ -44,13 +53,19 @@ final class PageVersion {
         id: UUID = UUID(),
         pdfBundleID: UUID,
         pageNumber: Int,
-        metadataSnapshot: Data? = nil
+        metadataSnapshot: Data? = nil,
+        inheritedTagMetadata: Bool = false,
+        inheritedVariableMetadata: Bool = false,
+        inheritedNoteBlocks: Bool = false
     ) {
         self.id = id
         self.createdAt = Date()
         self.pdfBundleID = pdfBundleID
         self.pageNumber = pageNumber
         self.metadataSnapshot = metadataSnapshot
+        self.inheritedTagMetadata = inheritedTagMetadata
+        self.inheritedVariableMetadata = inheritedVariableMetadata
+        self.inheritedNoteBlocks = inheritedNoteBlocks
     }
 
     // MARK: - Helper Methods
@@ -73,6 +88,11 @@ final class PageVersion {
             } ?? []
         )
         return try JSONEncoder().encode(snapshot)
+    }
+
+    /// Encode metadata snapshot from explicit IDs/values.
+    static func encodeMetadataSnapshot(_ snapshot: MetadataSnapshot) throws -> Data {
+        try JSONEncoder().encode(snapshot)
     }
 
     /// Decode metadata snapshot

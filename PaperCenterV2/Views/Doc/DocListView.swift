@@ -24,11 +24,16 @@ struct DocListView: View {
                     let formattedTags = viewModel?.formatTags(doc.tags) ?? []
                     let formattedVars = viewModel?.formatVariables(doc.variableAssignments) ?? []
 
-                    DocRowView(
-                        doc: doc,
-                        formattedTags: formattedTags,
-                        formattedVariables: formattedVars
-                    )
+                    NavigationLink {
+                        DocViewerScreen(doc: doc)
+                    } label: {
+                        DocRowView(
+                            doc: doc,
+                            formattedTags: formattedTags,
+                            formattedVariables: formattedVars
+                        )
+                    }
+                    .buttonStyle(.plain)
                     .contextMenu {
                         Button {
                             duplicate(doc)
