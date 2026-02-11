@@ -80,31 +80,36 @@ final class PDFImportService {
             cleanupURLs.forEach { try? fileManager.removeItem(at: $0) }
         }
 
-        guard let displaySource = try filteredSourceURL(for: displayPDF, selectedPages: selectedDisplayPages, required: true) else {
-            throw PDFImportError.noSelectedPages
-        }
-        if displaySource.isTemporary { cleanupURLs.append(displaySource.url) }
-
-        // Import display PDF (required)
-        let _ = try await importPDF(from: displaySource.url, type: .display, into: bundle)
-
-        // Import OCR PDF if provided
-        if let ocrURL = ocrPDF {
-            if let ocrSource = try filteredSourceURL(for: ocrURL, selectedPages: selectedDisplayPages, required: false) {
-                if ocrSource.isTemporary { cleanupURLs.append(ocrSource.url) }
-                let _ = try await importPDF(from: ocrSource.url, type: .ocr, into: bundle)
+        do {
+            guard let displaySource = try filteredSourceURL(for: displayPDF, selectedPages: selectedDisplayPages, required: true) else {
+                throw PDFImportError.noSelectedPages
             }
-        }
+            if displaySource.isTemporary { cleanupURLs.append(displaySource.url) }
 
-        // Import original PDF if provided
-        if let originalURL = originalPDF {
-            if let originalSource = try filteredSourceURL(for: originalURL, selectedPages: selectedDisplayPages, required: false) {
-                if originalSource.isTemporary { cleanupURLs.append(originalSource.url) }
-                let _ = try await importPDF(from: originalSource.url, type: .original, into: bundle)
+            // Import display PDF (required)
+            let _ = try await importPDF(from: displaySource.url, type: .display, into: bundle)
+
+            // Import original PDF if provided
+            if let originalURL = originalPDF {
+                if let originalSource = try filteredSourceURL(for: originalURL, selectedPages: selectedDisplayPages, required: false) {
+                    if originalSource.isTemporary { cleanupURLs.append(originalSource.url) }
+                    let _ = try await importPDF(from: originalSource.url, type: .original, into: bundle)
+                }
             }
-        }
 
-        return bundle
+            // Import OCR PDF last so OCR background extraction only starts after other variants succeed.
+            if let ocrURL = ocrPDF {
+                if let ocrSource = try filteredSourceURL(for: ocrURL, selectedPages: selectedDisplayPages, required: false) {
+                    if ocrSource.isTemporary { cleanupURLs.append(ocrSource.url) }
+                    let _ = try await importPDF(from: ocrSource.url, type: .ocr, into: bundle)
+                }
+            }
+
+            return bundle
+        } catch {
+            rollbackBundleImport(bundle)
+            throw error
+        }
     }
 
     /// Import a PDF file into a new or existing PDFBundle
@@ -482,10 +487,18 @@ private extension PDFImportService {
             return (url, false)
         }
 
+        let didStartAccessing = url.startAccessingSecurityScopedResource()
+        defer {
+            if didStartAccessing {
+                url.stopAccessingSecurityScopedResource()
+            }
+        }
+
         let subsetURL = try subsetPDF(at: url, keeping: selectedPages)
 
         if let subsetURL {
-            return (subsetURL, true)
+            let isTemporary = subsetURL.standardizedFileURL != url.standardizedFileURL
+            return (subsetURL, isTemporary)
         }
 
         if required {
@@ -501,6 +514,10 @@ private extension PDFImportService {
             throw PDFImportError.invalidPDF
         }
 
+        guard document.pageCount > 0 else {
+            return nil
+        }
+
         var extractedPages: [PDFPage] = []
         for pageNumber in uniquePages {
             let zeroIndex = pageNumber - 1
@@ -511,6 +528,13 @@ private extension PDFImportService {
 
         guard !extractedPages.isEmpty else {
             return nil
+        }
+
+        // Selecting the full range should reuse the original file to avoid unnecessary rewrites.
+        if extractedPages.count == document.pageCount,
+           uniquePages.first == 1,
+           uniquePages.last == document.pageCount {
+            return url
         }
 
         let newDocument = PDFDocument()
@@ -527,5 +551,13 @@ private extension PDFImportService {
         }
 
         return tempURL
+    }
+
+    func rollbackBundleImport(_ bundle: PDFBundle) {
+        let bundleDir = bundleDirectory(for: bundle.id)
+        if fileManager.fileExists(atPath: bundleDir.path) {
+            try? fileManager.removeItem(at: bundleDir)
+        }
+        modelContext.delete(bundle)
     }
 }

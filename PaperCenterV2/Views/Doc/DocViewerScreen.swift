@@ -16,6 +16,16 @@ struct DocViewerScreen: View {
     @State private var sessionStore: UniversalDocSessionStore?
     @State private var dataProvider: UniversalDocDataProvider?
     @State private var errorMessage: String?
+    @State private var showingStructureEditor = false
+    @State private var readingGroupID: UUID?
+
+    private var readingScopeTitle: String {
+        if let readingGroupID,
+           let group = doc.orderedPageGroups.first(where: { $0.id == readingGroupID }) {
+            return group.title
+        }
+        return "Whole Doc"
+    }
 
     var body: some View {
         Group {
@@ -41,10 +51,65 @@ struct DocViewerScreen: View {
         }
         .navigationTitle(doc.title)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Menu {
+                    Button {
+                        readingGroupID = nil
+                    } label: {
+                        if readingGroupID == nil {
+                            Label("Whole Document", systemImage: "checkmark")
+                        } else {
+                            Text("Whole Document")
+                        }
+                    }
+
+                    if !doc.orderedPageGroups.isEmpty {
+                        Divider()
+                    }
+
+                    ForEach(doc.orderedPageGroups) { group in
+                        Button {
+                            readingGroupID = group.id
+                        } label: {
+                            if readingGroupID == group.id {
+                                Label(group.title, systemImage: "checkmark")
+                            } else {
+                                Text(group.title)
+                            }
+                        }
+                    }
+                } label: {
+                    Label(readingScopeTitle, systemImage: "square.stack.3d.down.forward")
+                        .lineLimit(1)
+                }
+            }
+
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showingStructureEditor = true
+                } label: {
+                    Image(systemName: "list.bullet.indent")
+                }
+                .accessibilityLabel("Edit Structure")
+            }
+        }
+        .sheet(isPresented: $showingStructureEditor, onDismiss: {
+            if let readingGroupID,
+               doc.orderedPageGroups.contains(where: { $0.id == readingGroupID }) == false {
+                self.readingGroupID = nil
+            }
+            rebuildSession(focusLogicalPageID: nil, preferredVersionID: nil)
+        }) {
+            DocStructureEditorView(doc: doc)
+        }
         .task(id: doc.id) {
             if sessionStore == nil {
                 rebuildSession(focusLogicalPageID: nil, preferredVersionID: nil)
             }
+        }
+        .onChange(of: readingGroupID) { _, _ in
+            rebuildSession(focusLogicalPageID: nil, preferredVersionID: nil)
         }
     }
 
@@ -59,7 +124,7 @@ struct DocViewerScreen: View {
         }
 
         let builder = UniversalDocSessionBuilder(modelContext: modelContext)
-        let session = builder.buildSession(for: doc)
+        let session = builder.buildSession(for: doc, pageGroupID: readingGroupID)
 
         let newStore = UniversalDocSessionStore(session: session)
         if let previousSnapshots {

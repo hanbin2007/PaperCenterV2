@@ -62,6 +62,12 @@ struct UniversalDocVersionOption: Identifiable, Hashable {
 struct UniversalDocLogicalPageSlot: Identifiable, Hashable {
     let id: UUID
     let pageID: UUID
+    let docID: UUID
+    let docTitle: String
+    let pageGroupID: UUID?
+    let pageGroupTitle: String
+    let groupOrderKey: Int
+    let pageOrderInGroup: Int
     let versionOptions: [UniversalDocVersionOption]
     let defaultVersionID: UUID
     let defaultSource: UniversalDocViewerSource
@@ -72,10 +78,17 @@ struct UniversalDocLogicalPageSlot: Identifiable, Hashable {
 
 enum UniversalDocSessionViewMode: String, Codable {
     case paged
+    case continuous
+    case ocrSinglePage
+}
+
+enum UniversalDocSessionScope: Codable, Equatable, Hashable {
+    case singleDoc(UUID)
+    case allDocuments([UUID])
 }
 
 struct UniversalDocSession {
-    let docID: UUID
+    let scope: UniversalDocSessionScope
     let slots: [UniversalDocLogicalPageSlot]
     let viewMode: UniversalDocSessionViewMode
 }

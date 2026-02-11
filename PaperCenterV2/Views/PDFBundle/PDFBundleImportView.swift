@@ -18,6 +18,7 @@ struct PDFBundleImportView: View {
 
     @State private var activePickerType: PDFType?
     @State private var isFileImporterPresented = false
+    @State private var hasInitializedViewModel = false
 
     @Bindable var ocrSettings = OCRSettings.shared
 
@@ -138,8 +139,10 @@ struct PDFBundleImportView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Import") {
                         Task {
-                            await viewModel.importBundle()
-                            dismiss()
+                            let didImport = await viewModel.importBundle()
+                            if didImport {
+                                dismiss()
+                            }
                         }
                     }
                     .disabled(!viewModel.canImport)
@@ -155,8 +158,10 @@ struct PDFBundleImportView: View {
                 handleFileSelection(result, for: pickerType)
             }
             .onAppear {
-                // Initialize viewModel with actual modelContext
+                // Only initialize once; reinitializing on every appear clears user-selected files/pages.
+                guard !hasInitializedViewModel else { return }
                 viewModel = PDFImportViewModel(modelContext: modelContext)
+                hasInitializedViewModel = true
             }
         }
     }
@@ -301,7 +306,6 @@ private struct PageSelectionCard: View {
         .background(Color(.secondarySystemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .contentShape(RoundedRectangle(cornerRadius: 14))
-        .onTapGesture { onToggleSelection() }
     }
 
     @ViewBuilder

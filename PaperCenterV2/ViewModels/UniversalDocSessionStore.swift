@@ -13,6 +13,7 @@ final class UniversalDocSessionStore {
     let session: UniversalDocSession
 
     var currentPageIndex: Int = 0
+    private(set) var focusedLogicalPageID: UUID?
 
     private var previewVersionByLogicalPageID: [UUID: UUID]
     private var sourceByLogicalPageID: [UUID: UniversalDocViewerSource]
@@ -25,6 +26,7 @@ final class UniversalDocSessionStore {
         self.sourceByLogicalPageID = Dictionary(
             uniqueKeysWithValues: session.slots.map { ($0.id, $0.defaultSource) }
         )
+        self.focusedLogicalPageID = session.slots.first?.id
     }
 
     var hasPages: Bool {
@@ -61,9 +63,45 @@ final class UniversalDocSessionStore {
         sourceByLogicalPageID[logicalPageID] = source
     }
 
+    func setFocusedPage(_ logicalPageID: UUID) {
+        guard slot(for: logicalPageID) != nil else { return }
+        focusedLogicalPageID = logicalPageID
+        if let index = session.slots.firstIndex(where: { $0.id == logicalPageID }) {
+            currentPageIndex = index
+        }
+    }
+
+    func changeSourceForFocusedPage(to source: UniversalDocViewerSource) {
+        let logicalPageID = focusedLogicalPageID ?? currentSlot?.id
+        guard let logicalPageID else { return }
+        changeSource(logicalPageID: logicalPageID, to: source)
+    }
+
+    func changeSourceForAllPages(
+        to source: UniversalDocViewerSource,
+        using dataProvider: UniversalDocDataProvider
+    ) {
+        for slot in session.slots {
+            let selectedVersionID = currentPreviewVersionID(for: slot.id) ?? slot.defaultVersionID
+            guard let selectedVersion = slot.versionOptions.first(where: { $0.id == selectedVersionID }) else {
+                continue
+            }
+
+            let available = dataProvider.availableSources(for: selectedVersion)
+            if available.contains(source) {
+                sourceByLogicalPageID[slot.id] = source
+            } else if let preferred = dataProvider.preferredSource(for: selectedVersion) {
+                sourceByLogicalPageID[slot.id] = preferred
+            } else {
+                sourceByLogicalPageID[slot.id] = slot.defaultSource
+            }
+        }
+    }
+
     func navigate(to index: Int) {
         guard index >= 0, index < session.slots.count else { return }
         currentPageIndex = index
+        focusedLogicalPageID = session.slots[index].id
     }
 
     func logicalPageID(at index: Int) -> UUID? {
@@ -96,8 +134,12 @@ final class UniversalDocSessionStore {
 
         guard let fallbackLogicalPageID,
               let index = session.slots.firstIndex(where: { $0.id == fallbackLogicalPageID }) else {
+            if let first = session.slots.first {
+                focusedLogicalPageID = first.id
+            }
             return
         }
         currentPageIndex = index
+        focusedLogicalPageID = fallbackLogicalPageID
     }
 }

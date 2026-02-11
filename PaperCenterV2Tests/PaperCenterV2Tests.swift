@@ -250,6 +250,151 @@ final class PaperCenterV2Tests: XCTestCase {
     }
 
     @MainActor
+    func testBuildAllDocumentsSessionOrdersByCreatedAtAscending() throws {
+        let shouldSkip = ProcessInfo.processInfo.environment["SKIP_UNIVERSALDOC_TESTS"] != "0"
+        if shouldSkip {
+            throw XCTSkip("Skipped on Designed-for-iPad runtime due unstable XCTest host crashes.")
+        }
+
+        let docOld = Doc(title: "Old")
+        docOld.createdAt = Date(timeIntervalSince1970: 100)
+        let groupOld = PageGroup(title: "G-Old", doc: docOld)
+        docOld.addPageGroup(groupOld)
+        let oldBundle = PDFBundle(name: "Old Bundle")
+        let oldPage = Page(pdfBundle: oldBundle, pageNumber: 1, pageGroup: groupOld)
+        groupOld.addPage(oldPage)
+
+        let docNew = Doc(title: "New")
+        docNew.createdAt = Date(timeIntervalSince1970: 200)
+        let groupNew = PageGroup(title: "G-New", doc: docNew)
+        docNew.addPageGroup(groupNew)
+        let newBundle = PDFBundle(name: "New Bundle")
+        let newPage = Page(pdfBundle: newBundle, pageNumber: 1, pageGroup: groupNew)
+        groupNew.addPage(newPage)
+
+        let builder = UniversalDocSessionBuilder()
+        let session = builder.buildSession(for: [docNew, docOld])
+
+        XCTAssertEqual(session.scope, .allDocuments([docOld.id, docNew.id]))
+        XCTAssertEqual(session.slots.map(\.docID), [docOld.id, docNew.id])
+    }
+
+    @MainActor
+    func testSessionSlotsCarryDocAndGroupContext() throws {
+        let shouldSkip = ProcessInfo.processInfo.environment["SKIP_UNIVERSALDOC_TESTS"] != "0"
+        if shouldSkip {
+            throw XCTSkip("Skipped on Designed-for-iPad runtime due unstable XCTest host crashes.")
+        }
+
+        let bundle = PDFBundle(name: "Bundle")
+        let doc = Doc(title: "Doc")
+        let group = PageGroup(title: "Group A", doc: doc)
+        doc.addPageGroup(group)
+
+        let page1 = Page(pdfBundle: bundle, pageNumber: 1, pageGroup: group)
+        let page2 = Page(pdfBundle: bundle, pageNumber: 2, pageGroup: group)
+        group.addPage(page1)
+        group.addPage(page2)
+
+        let builder = UniversalDocSessionBuilder()
+        let session = builder.buildSession(for: doc)
+        XCTAssertEqual(session.scope, .singleDoc(doc.id))
+        XCTAssertEqual(session.slots.count, 2)
+        XCTAssertEqual(session.slots[0].docID, doc.id)
+        XCTAssertEqual(session.slots[0].docTitle, doc.title)
+        XCTAssertEqual(session.slots[0].pageGroupID, group.id)
+        XCTAssertEqual(session.slots[0].pageGroupTitle, group.title)
+        XCTAssertEqual(session.slots[0].groupOrderKey, 0)
+        XCTAssertEqual(session.slots[0].pageOrderInGroup, 0)
+        XCTAssertEqual(session.slots[1].pageOrderInGroup, 1)
+    }
+
+    @MainActor
+    func testGroupNavigationTargetsFirstPageOfGroup() throws {
+        let shouldSkip = ProcessInfo.processInfo.environment["SKIP_UNIVERSALDOC_TESTS"] != "0"
+        if shouldSkip {
+            throw XCTSkip("Skipped on Designed-for-iPad runtime due unstable XCTest host crashes.")
+        }
+
+        let bundle = PDFBundle(name: "Bundle")
+        let doc = Doc(title: "Doc")
+
+        let groupA = PageGroup(title: "A", doc: doc)
+        let groupB = PageGroup(title: "B", doc: doc)
+        doc.addPageGroup(groupA)
+        doc.addPageGroup(groupB)
+
+        let pageA1 = Page(pdfBundle: bundle, pageNumber: 1, pageGroup: groupA)
+        let pageA2 = Page(pdfBundle: bundle, pageNumber: 2, pageGroup: groupA)
+        let pageB1 = Page(pdfBundle: bundle, pageNumber: 3, pageGroup: groupB)
+        groupA.addPage(pageA1)
+        groupA.addPage(pageA2)
+        groupB.addPage(pageB1)
+
+        let builder = UniversalDocSessionBuilder()
+        let session = builder.buildSession(for: doc)
+        XCTAssertEqual(session.viewMode, .continuous)
+
+        let groupAFirst = try XCTUnwrap(session.slots.first(where: { $0.pageGroupID == groupA.id }))
+        let groupBFirst = try XCTUnwrap(session.slots.first(where: { $0.pageGroupID == groupB.id }))
+
+        XCTAssertEqual(groupAFirst.pageID, pageA1.id)
+        XCTAssertEqual(groupBFirst.pageID, pageB1.id)
+    }
+
+    @MainActor
+    func testBuildSingleDocSessionForSpecificGroupOnlyIncludesThatGroupPages() throws {
+        let shouldSkip = ProcessInfo.processInfo.environment["SKIP_UNIVERSALDOC_TESTS"] != "0"
+        if shouldSkip {
+            throw XCTSkip("Skipped on Designed-for-iPad runtime due unstable XCTest host crashes.")
+        }
+
+        let bundle = PDFBundle(name: "Bundle")
+        let doc = Doc(title: "Doc")
+
+        let groupA = PageGroup(title: "A", doc: doc)
+        let groupB = PageGroup(title: "B", doc: doc)
+        doc.addPageGroup(groupA)
+        doc.addPageGroup(groupB)
+
+        let pageA = Page(pdfBundle: bundle, pageNumber: 1, pageGroup: groupA)
+        let pageB1 = Page(pdfBundle: bundle, pageNumber: 2, pageGroup: groupB)
+        let pageB2 = Page(pdfBundle: bundle, pageNumber: 3, pageGroup: groupB)
+        groupA.addPage(pageA)
+        groupB.addPage(pageB1)
+        groupB.addPage(pageB2)
+
+        let builder = UniversalDocSessionBuilder()
+        let session = builder.buildSession(for: doc, pageGroupID: groupB.id)
+
+        XCTAssertEqual(session.scope, .singleDoc(doc.id))
+        XCTAssertEqual(session.slots.count, 2)
+        XCTAssertTrue(session.slots.allSatisfy { $0.pageGroupID == groupB.id })
+        XCTAssertEqual(session.slots.map(\.pageID), [pageB1.id, pageB2.id])
+    }
+
+    @MainActor
+    func testSinglePageControlsAreNotExposedInViewerModel() throws {
+        let shouldSkip = ProcessInfo.processInfo.environment["SKIP_UNIVERSALDOC_TESTS"] != "0"
+        if shouldSkip {
+            throw XCTSkip("Skipped on Designed-for-iPad runtime due unstable XCTest host crashes.")
+        }
+
+        let bundle = PDFBundle(name: "Bundle")
+        let doc = Doc(title: "Doc")
+        let group = PageGroup(title: "Group", doc: doc)
+        doc.addPageGroup(group)
+        let page = Page(pdfBundle: bundle, pageNumber: 1, pageGroup: group)
+        group.addPage(page)
+
+        let builder = UniversalDocSessionBuilder()
+        let session = builder.buildSession(for: doc)
+
+        XCTAssertEqual(session.viewMode, .continuous)
+        XCTAssertNotEqual(session.viewMode, .paged)
+    }
+
+    @MainActor
     func testPageVersionServiceRespectsMetadataInheritanceOptions() throws {
         let shouldSkip = ProcessInfo.processInfo.environment["SKIP_UNIVERSALDOC_TESTS"] != "0"
         if shouldSkip {
@@ -376,6 +521,306 @@ final class PaperCenterV2Tests: XCTestCase {
         XCTAssertEqual(clonedRoot.childOrder, [clonedChild.id])
     }
 
+    @MainActor
+    func testSessionStoreFocusedPageAndFocusedSourceUpdate() throws {
+        let shouldSkip = ProcessInfo.processInfo.environment["SKIP_UNIVERSALDOC_STORE_TESTS"] != "0"
+        if shouldSkip {
+            throw XCTSkip("Skipped on Designed-for-iPad runtime due unstable @Observable store crashes. Set SKIP_UNIVERSALDOC_STORE_TESTS=0 to run.")
+        }
+
+        let bundleA = PDFBundle(name: "A")
+        let bundleB = PDFBundle(name: "B")
+
+        let logicalA = UUID()
+        let logicalB = UUID()
+        let versionA = UUID()
+        let versionB = UUID()
+
+        let session = UniversalDocSession(
+            scope: .singleDoc(UUID()),
+            slots: [
+                makeSessionSlot(
+                    logicalPageID: logicalA,
+                    pageID: UUID(),
+                    bundleID: bundleA.id,
+                    versionIDs: [versionA],
+                    defaultVersionID: versionA
+                ),
+                makeSessionSlot(
+                    logicalPageID: logicalB,
+                    pageID: UUID(),
+                    bundleID: bundleB.id,
+                    versionIDs: [versionB],
+                    defaultVersionID: versionB
+                ),
+            ],
+            viewMode: .continuous
+        )
+
+        let store = UniversalDocSessionStore(session: session)
+        XCTAssertEqual(store.focusedLogicalPageID, logicalA)
+        XCTAssertEqual(store.currentPageIndex, 0)
+
+        store.setFocusedPage(logicalB)
+        XCTAssertEqual(store.focusedLogicalPageID, logicalB)
+        XCTAssertEqual(store.currentPageIndex, 1)
+
+        store.changeSourceForFocusedPage(to: .ocr)
+        XCTAssertEqual(store.currentSource(for: logicalB), .ocr)
+        XCTAssertEqual(store.currentSource(for: logicalA), .display)
+    }
+
+    @MainActor
+    func testGlobalSourceInAllDocumentsScopeAppliesToAllSlots() throws {
+        let shouldSkip = ProcessInfo.processInfo.environment["SKIP_UNIVERSALDOC_STORE_TESTS"] != "0"
+        if shouldSkip {
+            throw XCTSkip("Skipped on Designed-for-iPad runtime due unstable @Observable store crashes. Set SKIP_UNIVERSALDOC_STORE_TESTS=0 to run.")
+        }
+
+        let container = try makeInMemoryContainer()
+        let context = ModelContext(container)
+
+        let bundleWithOCR = PDFBundle(name: "Bundle With OCR")
+        bundleWithOCR.ocrTextByPage[1] = "text"
+        let bundleWithoutOCR = PDFBundle(name: "Bundle Without OCR")
+        context.insert(bundleWithOCR)
+        context.insert(bundleWithoutOCR)
+        try context.save()
+
+        let logicalA = UUID()
+        let logicalB = UUID()
+        let versionA = UUID()
+        let versionB = UUID()
+
+        let session = UniversalDocSession(
+            scope: .allDocuments([UUID(), UUID()]),
+            slots: [
+                makeSessionSlot(
+                    logicalPageID: logicalA,
+                    pageID: UUID(),
+                    bundleID: bundleWithOCR.id,
+                    versionIDs: [versionA],
+                    defaultVersionID: versionA
+                ),
+                makeSessionSlot(
+                    logicalPageID: logicalB,
+                    pageID: UUID(),
+                    bundleID: bundleWithoutOCR.id,
+                    versionIDs: [versionB],
+                    defaultVersionID: versionB
+                ),
+            ],
+            viewMode: .continuous
+        )
+
+        let store = UniversalDocSessionStore(session: session)
+        let provider = UniversalDocDataProvider(modelContext: context)
+
+        store.changeSourceForAllPages(to: .ocr, using: provider)
+
+        XCTAssertEqual(store.currentSource(for: logicalA), .ocr)
+        XCTAssertEqual(store.currentSource(for: logicalB), .display)
+    }
+
+    @MainActor
+    func testSessionStorePreviewVersionSwitchIsPerPageOnly() throws {
+        let shouldSkip = ProcessInfo.processInfo.environment["SKIP_UNIVERSALDOC_STORE_TESTS"] != "0"
+        if shouldSkip {
+            throw XCTSkip("Skipped on Designed-for-iPad runtime due unstable @Observable store crashes. Set SKIP_UNIVERSALDOC_STORE_TESTS=0 to run.")
+        }
+
+        let logicalA = UUID()
+        let logicalB = UUID()
+        let bundleA = UUID()
+        let bundleB = UUID()
+
+        let versionA1 = UUID()
+        let versionA2 = UUID()
+        let versionB1 = UUID()
+        let versionB2 = UUID()
+
+        let session = UniversalDocSession(
+            scope: .singleDoc(UUID()),
+            slots: [
+                makeSessionSlot(
+                    logicalPageID: logicalA,
+                    pageID: UUID(),
+                    bundleID: bundleA,
+                    versionIDs: [versionA1, versionA2],
+                    defaultVersionID: versionA1
+                ),
+                makeSessionSlot(
+                    logicalPageID: logicalB,
+                    pageID: UUID(),
+                    bundleID: bundleB,
+                    versionIDs: [versionB1, versionB2],
+                    defaultVersionID: versionB1
+                ),
+            ],
+            viewMode: .continuous
+        )
+
+        let store = UniversalDocSessionStore(session: session)
+        store.changePreviewVersion(logicalPageID: logicalA, to: versionA2)
+
+        XCTAssertEqual(store.currentPreviewVersionID(for: logicalA), versionA2)
+        XCTAssertEqual(store.currentPreviewVersionID(for: logicalB), versionB1)
+    }
+
+    @MainActor
+    func testDocNotesEditorCreateRootAndUpdateRect() throws {
+        let shouldSkip = ProcessInfo.processInfo.environment["SKIP_DOC_NOTES_EDITOR_TESTS"] != "0"
+        if shouldSkip {
+            throw XCTSkip("Skipped on Designed-for-iPad runtime due SwiftData Array<UUID> materialization crash. Set SKIP_DOC_NOTES_EDITOR_TESTS=0 to run.")
+        }
+
+        let fixture = try makeNotesEditorFixture()
+        let viewModel = fixture.viewModel
+        let pageVersion = fixture.pageVersion
+        let page = fixture.page
+
+        viewModel.createRoot(
+            pageVersionID: pageVersion.id,
+            page: page,
+            normalizedRect: CGRect(x: 0.2, y: 0.3, width: 0.4, height: 0.25),
+            title: " Root ",
+            body: " Body "
+        )
+
+        let root = try XCTUnwrap(viewModel.rootNotes.first)
+        XCTAssertEqual(root.pageVersionID, pageVersion.id)
+        XCTAssertEqual(root.pageId, page.id)
+        XCTAssertEqual(root.title, "Root")
+        XCTAssertEqual(root.body, "Body")
+        XCTAssertEqual(root.rectX, 0.2, accuracy: 0.0001)
+        XCTAssertEqual(root.rectY, 0.3, accuracy: 0.0001)
+        XCTAssertEqual(root.rectWidth, 0.4, accuracy: 0.0001)
+        XCTAssertEqual(root.rectHeight, 0.25, accuracy: 0.0001)
+
+        viewModel.updateRect(
+            noteID: root.id,
+            normalizedRect: CGRect(x: -0.5, y: 0.6, width: 2.0, height: 0.8)
+        )
+
+        let updated = try XCTUnwrap(viewModel.noteIndex[root.id])
+        XCTAssertEqual(updated.rectX, 0.0, accuracy: 0.0001)
+        XCTAssertEqual(updated.rectY, 0.6, accuracy: 0.0001)
+        XCTAssertEqual(updated.rectWidth, 1.0, accuracy: 0.0001)
+        XCTAssertEqual(updated.rectHeight, 0.4, accuracy: 0.0001)
+        XCTAssertEqual(updated.verticalOrderHint, 0.6, accuracy: 0.0001)
+    }
+
+    @MainActor
+    func testGroupNotesLoadByMultiplePageVersionIDsAndSortByPageOrder() throws {
+        let shouldSkip = ProcessInfo.processInfo.environment["SKIP_DOC_NOTES_EDITOR_TESTS"] != "0"
+        if shouldSkip {
+            throw XCTSkip("Skipped on Designed-for-iPad runtime due SwiftData Array<UUID> materialization crash. Set SKIP_DOC_NOTES_EDITOR_TESTS=0 to run.")
+        }
+
+        let container = try makeInMemoryContainer(includeNoteModels: true)
+        let context = ModelContext(container)
+
+        let bundle = PDFBundle(name: "Bundle")
+        let doc = Doc(title: "Doc")
+        let group = PageGroup(title: "Group", doc: doc)
+        doc.addPageGroup(group)
+
+        let page1 = Page(pdfBundle: bundle, pageNumber: 1, pageGroup: group)
+        let page2 = Page(pdfBundle: bundle, pageNumber: 2, pageGroup: group)
+        group.addPage(page1)
+        group.addPage(page2)
+
+        context.insert(bundle)
+        context.insert(doc)
+        context.insert(group)
+        context.insert(page1)
+        context.insert(page2)
+        try context.save()
+
+        let version1 = try XCTUnwrap(page1.latestVersion)
+        let version2 = try XCTUnwrap(page2.latestVersion)
+
+        let viewModel = DocNotesEditorViewModel(modelContext: context)
+        viewModel.createRoot(
+            pageVersionID: version2.id,
+            page: page2,
+            normalizedRect: CGRect(x: 0.2, y: 0.8, width: 0.2, height: 0.1),
+            title: "P2",
+            body: "note-p2"
+        )
+        viewModel.createRoot(
+            pageVersionID: version1.id,
+            page: page1,
+            normalizedRect: CGRect(x: 0.2, y: 0.2, width: 0.2, height: 0.1),
+            title: "P1",
+            body: "note-p1"
+        )
+
+        viewModel.loadNotes(pageVersionIDs: [version2.id, version1.id])
+
+        XCTAssertEqual(viewModel.notes.count, 2)
+        XCTAssertEqual(viewModel.notes.first?.body, "note-p1")
+        XCTAssertEqual(viewModel.notes.last?.body, "note-p2")
+        XCTAssertEqual(viewModel.rootNotes(for: version1.id).count, 1)
+        XCTAssertEqual(viewModel.rootNotes(for: version2.id).count, 1)
+    }
+
+    @MainActor
+    func testDocNotesEditorReplyMoveAndDeleteSubtreeConsistency() throws {
+        let shouldSkip = ProcessInfo.processInfo.environment["SKIP_DOC_NOTES_EDITOR_TESTS"] != "0"
+        if shouldSkip {
+            throw XCTSkip("Skipped on Designed-for-iPad runtime due SwiftData Array<UUID> materialization crash. Set SKIP_DOC_NOTES_EDITOR_TESTS=0 to run.")
+        }
+
+        let fixture = try makeNotesEditorFixture()
+        let viewModel = fixture.viewModel
+        let context = fixture.context
+        let pageVersion = fixture.pageVersion
+        let page = fixture.page
+
+        viewModel.createRoot(
+            pageVersionID: pageVersion.id,
+            page: page,
+            normalizedRect: CGRect(x: 0.1, y: 0.1, width: 0.2, height: 0.2),
+            title: "Root",
+            body: "root"
+        )
+        let root = try XCTUnwrap(viewModel.rootNotes.first)
+
+        viewModel.createReply(parentID: root.id, title: "Child", body: "child")
+        let child = try XCTUnwrap(viewModel.notes.first(where: { $0.body == "child" }))
+        XCTAssertEqual(child.parentNoteID, root.id)
+        XCTAssertEqual(child.rectX, root.rectX, accuracy: 0.0001)
+        XCTAssertEqual(child.rectY, root.rectY, accuracy: 0.0001)
+        XCTAssertEqual(child.rectWidth, root.rectWidth, accuracy: 0.0001)
+        XCTAssertEqual(child.rectHeight, root.rectHeight, accuracy: 0.0001)
+
+        viewModel.createRoot(
+            pageVersionID: pageVersion.id,
+            page: page,
+            normalizedRect: CGRect(x: 0.5, y: 0.7, width: 0.2, height: 0.2),
+            title: "Second",
+            body: "second"
+        )
+        let secondRoot = try XCTUnwrap(viewModel.rootNotes.first(where: { $0.body == "second" }))
+        let fromIndex = try XCTUnwrap(viewModel.rootNotes.firstIndex(where: { $0.id == secondRoot.id }))
+        viewModel.moveSibling(noteID: secondRoot.id, from: fromIndex, to: 0)
+        XCTAssertEqual(viewModel.rootNotes.first?.id, secondRoot.id)
+
+        viewModel.moveToParent(noteID: secondRoot.id, newParentID: root.id, at: nil)
+        XCTAssertTrue(viewModel.rootNotes.contains(where: { $0.id == secondRoot.id }) == false)
+        XCTAssertTrue(viewModel.orderedChildren(of: root.id).contains(where: { $0.id == secondRoot.id }))
+
+        viewModel.deleteSubtree(noteID: root.id)
+        XCTAssertTrue(viewModel.notes.isEmpty)
+
+        let allNotes = try context.fetch(FetchDescriptor<NoteBlock>())
+        let deletedIDs = Set(allNotes.filter(\.isDeleted).map(\.id))
+        XCTAssertTrue(deletedIDs.contains(root.id))
+        XCTAssertTrue(deletedIDs.contains(child.id))
+        XCTAssertTrue(deletedIDs.contains(secondRoot.id))
+    }
+
     private func makeRootNote(body: String) -> NoteBlock {
         let bundle = PDFBundle(name: "Bundle")
         let page = Page(pdfBundle: bundle, pageNumber: 1)
@@ -437,5 +882,75 @@ final class PaperCenterV2Tests: XCTestCase {
             throw NSError(domain: "PaperCenterV2Tests", code: 2, userInfo: [NSLocalizedDescriptionKey: "Failed to write temporary PDF"])
         }
         return url
+    }
+
+    private func makeSessionSlot(
+        logicalPageID: UUID,
+        pageID: UUID,
+        bundleID: UUID,
+        versionIDs: [UUID],
+        defaultVersionID: UUID,
+        docID: UUID = UUID(),
+        docTitle: String = "Doc",
+        pageGroupID: UUID? = UUID(),
+        pageGroupTitle: String = "Group",
+        groupOrderKey: Int = 0,
+        pageOrderInGroup: Int = 0
+    ) -> UniversalDocLogicalPageSlot {
+        let options = versionIDs.enumerated().map { index, id in
+            UniversalDocVersionOption(
+                id: id,
+                pdfBundleID: bundleID,
+                pageNumber: 1,
+                createdAt: Date(timeIntervalSince1970: TimeInterval(index + 1)),
+                ordinal: index + 1,
+                isCurrentDefault: id == defaultVersionID
+            )
+        }
+        return UniversalDocLogicalPageSlot(
+            id: logicalPageID,
+            pageID: pageID,
+            docID: docID,
+            docTitle: docTitle,
+            pageGroupID: pageGroupID,
+            pageGroupTitle: pageGroupTitle,
+            groupOrderKey: groupOrderKey,
+            pageOrderInGroup: pageOrderInGroup,
+            versionOptions: options,
+            defaultVersionID: defaultVersionID,
+            defaultSource: .display,
+            canPreviewOtherVersions: options.count > 1,
+            canSwitchSource: true,
+            canAnnotate: true
+        )
+    }
+
+    @MainActor
+    private func makeNotesEditorFixture() throws -> (
+        context: ModelContext,
+        viewModel: DocNotesEditorViewModel,
+        page: Page,
+        pageVersion: PageVersion
+    ) {
+        let container = try makeInMemoryContainer(includeNoteModels: true)
+        let context = ModelContext(container)
+
+        let bundle = PDFBundle(name: "Fixture Bundle")
+        let doc = Doc(title: "Fixture Doc")
+        let group = PageGroup(title: "Fixture Group", doc: doc)
+        let page = Page(pdfBundle: bundle, pageNumber: 1, pageGroup: group)
+        doc.addPageGroup(group)
+        group.addPage(page)
+
+        context.insert(bundle)
+        context.insert(doc)
+        context.insert(group)
+        context.insert(page)
+        try context.save()
+
+        let pageVersion = try XCTUnwrap(page.latestVersion)
+        let viewModel = DocNotesEditorViewModel(modelContext: context)
+        viewModel.loadNotes(pageVersionID: pageVersion.id)
+        return (context, viewModel, page, pageVersion)
     }
 }

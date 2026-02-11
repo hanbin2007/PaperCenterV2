@@ -87,6 +87,27 @@ final class UniversalDocDataProvider {
         return try? modelContext.fetch(descriptor).first
     }
 
+    func pageVersion(for id: UUID) -> PageVersion? {
+        let descriptor = FetchDescriptor<PageVersion>(
+            predicate: #Predicate { version in
+                version.id == id
+            }
+        )
+        return try? modelContext.fetch(descriptor).first
+    }
+
+    func notes(pageVersionID: UUID) -> [NoteBlock] {
+        fetchNotes(pageVersionID: pageVersionID)
+    }
+
+    func tags(pageID: UUID) -> [Tag] {
+        page(for: pageID)?.tags ?? []
+    }
+
+    func pageGroupName(pageID: UUID) -> String? {
+        page(for: pageID)?.pageGroup?.title
+    }
+
     private func fetchNotes(pageVersionID: UUID) -> [NoteBlock] {
         let descriptor = FetchDescriptor<NoteBlock>(
             predicate: #Predicate { note in

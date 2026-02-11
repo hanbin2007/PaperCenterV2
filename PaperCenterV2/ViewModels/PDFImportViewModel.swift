@@ -82,15 +82,15 @@ final class PDFImportViewModel {
     // MARK: - Import Actions
 
     /// Import the selected PDFs as a bundle
-    func importBundle() async {
+    func importBundle() async -> Bool {
         guard let displayURL = displayPDFURL else {
             errorMessage = "Display PDF is required"
-            return
+            return false
         }
 
         if !pagePreviews.isEmpty && selectedPageNumbers.isEmpty {
             errorMessage = "Select at least one page to import"
-            return
+            return false
         }
 
         isImporting = true
@@ -115,9 +115,11 @@ final class PDFImportViewModel {
 
             // Clear state
             reset()
+            return true
         } catch {
             errorMessage = error.localizedDescription
             isImporting = false
+            return false
         }
     }
 

@@ -10,6 +10,14 @@ import SwiftData
 
 @MainActor
 final class UniversalDocSessionBuilder {
+    private struct BuildPageContext {
+        let doc: Doc
+        let pageGroup: PageGroup?
+        let page: Page
+        let groupOrderKey: Int
+        let pageOrderInGroup: Int
+    }
+
     private let modelContext: ModelContext?
     private var bundleCache: [UUID: PDFBundle] = [:]
 
@@ -22,15 +30,97 @@ final class UniversalDocSessionBuilder {
     }
 
     func buildSession(for doc: Doc) -> UniversalDocSession {
-        let slots = doc.allPages.compactMap { buildSlot(for: $0) }
+        buildSession(for: doc, pageGroupID: nil)
+    }
+
+    func buildSession(for doc: Doc, pageGroupID: UUID?) -> UniversalDocSession {
+        let slots = buildSlots(from: buildPageContexts(for: doc, pageGroupID: pageGroupID))
         return UniversalDocSession(
-            docID: doc.id,
+            scope: .singleDoc(doc.id),
             slots: slots,
-            viewMode: .paged
+            viewMode: .continuous
         )
     }
 
-    private func buildSlot(for page: Page) -> UniversalDocLogicalPageSlot? {
+    func buildSession(for docs: [Doc]) -> UniversalDocSession {
+        let orderedDocs = sortDocs(docs)
+        let slots = buildSlots(from: buildPageContexts(for: orderedDocs, shouldSortDocs: false))
+        return UniversalDocSession(
+            scope: .allDocuments(orderedDocs.map(\.id)),
+            slots: slots,
+            viewMode: .continuous
+        )
+    }
+
+    private func buildSlots(from pageContexts: [BuildPageContext]) -> [UniversalDocLogicalPageSlot] {
+        pageContexts.compactMap { buildSlot(for: $0) }
+    }
+
+    private func sortDocs(_ docs: [Doc]) -> [Doc] {
+        docs.sorted { lhs, rhs in
+            if lhs.createdAt != rhs.createdAt {
+                return lhs.createdAt < rhs.createdAt
+            }
+            if lhs.title != rhs.title {
+                return lhs.title.localizedStandardCompare(rhs.title) == .orderedAscending
+            }
+            return lhs.id.uuidString < rhs.id.uuidString
+        }
+    }
+
+    private func buildPageContexts(for doc: Doc, pageGroupID: UUID?) -> [BuildPageContext] {
+        var contexts: [BuildPageContext] = []
+        let orderedGroups = doc.orderedPageGroups
+
+        for (groupIndex, pageGroup) in orderedGroups.enumerated() {
+            if let pageGroupID, pageGroup.id != pageGroupID {
+                continue
+            }
+
+            for (pageIndex, page) in pageGroup.orderedPages.enumerated() {
+                contexts.append(
+                    BuildPageContext(
+                        doc: doc,
+                        pageGroup: pageGroup,
+                        page: page,
+                        groupOrderKey: groupIndex,
+                        pageOrderInGroup: pageIndex
+                    )
+                )
+            }
+        }
+
+        return contexts
+    }
+
+    private func buildPageContexts(for docs: [Doc], shouldSortDocs: Bool) -> [BuildPageContext] {
+        let orderedDocs = shouldSortDocs ? sortDocs(docs) : docs
+        var contexts: [BuildPageContext] = []
+        var globalGroupOrder = 0
+
+        for doc in orderedDocs {
+            for pageGroup in doc.orderedPageGroups {
+                let pages = pageGroup.orderedPages
+                for (pageIndex, page) in pages.enumerated() {
+                    contexts.append(
+                        BuildPageContext(
+                            doc: doc,
+                            pageGroup: pageGroup,
+                            page: page,
+                            groupOrderKey: globalGroupOrder,
+                            pageOrderInGroup: pageIndex
+                        )
+                    )
+                }
+                globalGroupOrder += 1
+            }
+        }
+
+        return contexts
+    }
+
+    private func buildSlot(for context: BuildPageContext) -> UniversalDocLogicalPageSlot? {
+        let page = context.page
         let ordered = (page.versions ?? []).sorted { lhs, rhs in
             lhs.createdAt < rhs.createdAt
         }
@@ -57,6 +147,12 @@ final class UniversalDocSessionBuilder {
         return UniversalDocLogicalPageSlot(
             id: page.id,
             pageID: page.id,
+            docID: context.doc.id,
+            docTitle: context.doc.title,
+            pageGroupID: context.pageGroup?.id,
+            pageGroupTitle: context.pageGroup?.title ?? "Ungrouped",
+            groupOrderKey: context.groupOrderKey,
+            pageOrderInGroup: context.pageOrderInGroup,
             versionOptions: versionOptions,
             defaultVersionID: defaultVersionID,
             defaultSource: defaultSource,
