@@ -692,6 +692,7 @@ private struct PageEditorSheet: View {
     @State private var selectedBundleID: UUID?
     @State private var pageNumber: Int
     @State private var errorMessage: String?
+    @State private var showingImportBundle = false
 
     init(
         title: String,
@@ -731,6 +732,12 @@ private struct PageEditorSheet: View {
                     Section {
                         Label("No PDF bundles available", systemImage: "tray")
                             .foregroundStyle(.secondary)
+
+                        Button {
+                            showingImportBundle = true
+                        } label: {
+                            Label("Import PDF Bundle", systemImage: "plus.circle")
+                        }
                     }
                 } else {
                     Section("Source") {
@@ -754,6 +761,12 @@ private struct PageEditorSheet: View {
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
+                        }
+
+                        Button {
+                            showingImportBundle = true
+                        } label: {
+                            Label("Import PDF Bundle", systemImage: "plus.circle")
                         }
                     }
                 }
@@ -781,6 +794,9 @@ private struct PageEditorSheet: View {
                     }
                     .disabled(selectedBundle == nil)
                 }
+            }
+            .sheet(isPresented: $showingImportBundle) {
+                PDFBundleImportView()
             }
             .onAppear {
                 if selectedBundleID == nil {

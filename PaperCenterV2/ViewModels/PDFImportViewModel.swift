@@ -27,6 +27,7 @@ final class PDFImportViewModel {
 
     private let modelContext: ModelContext
     private let importService: PDFImportService
+    private var lastAutoSuggestedBundleName: String?
 
     // State
     var bundleName = ""
@@ -44,6 +45,7 @@ final class PDFImportViewModel {
     }
     var originalPDFURL: URL? {
         didSet {
+            applyAutoBundleNameSuggestion(from: originalPDFURL)
             guard originalPDFURL != oldValue else { return }
             rebuildPageMetadata()
         }
@@ -126,6 +128,7 @@ final class PDFImportViewModel {
     /// Reset the import state
     func reset() {
         bundleName = ""
+        lastAutoSuggestedBundleName = nil
         displayPDFURL = nil
         ocrPDFURL = nil
         originalPDFURL = nil
@@ -220,5 +223,32 @@ final class PDFImportViewModel {
             }
         }
         return PDFDocument(url: url)
+    }
+
+    private func applyAutoBundleNameSuggestion(from originalURL: URL?) {
+        guard let originalURL else { return }
+        let suggestedName = suggestedBundleName(from: originalURL)
+        guard !suggestedName.isEmpty else { return }
+
+        let currentName = bundleName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let shouldAutoFill = currentName.isEmpty || currentName == lastAutoSuggestedBundleName
+        guard shouldAutoFill else { return }
+
+        bundleName = suggestedName
+        lastAutoSuggestedBundleName = suggestedName
+    }
+
+    private func suggestedBundleName(from url: URL) -> String {
+        let baseName = url.deletingPathExtension()
+            .lastPathComponent
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        if !baseName.isEmpty {
+            return baseName
+        }
+
+        let fallback = url.lastPathComponent
+            .replacingOccurrences(of: ".pdf", with: "", options: .caseInsensitive)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return fallback
     }
 }

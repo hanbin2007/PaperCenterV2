@@ -175,16 +175,20 @@ struct PDFBundleImportView: View {
         switch result {
         case .success(let urls):
             guard let url = urls.first else { return }
-            switch type {
-            case .display:
-                viewModel.displayPDFURL = url
-            case .ocr:
-                viewModel.ocrPDFURL = url
-            case .original:
-                viewModel.originalPDFURL = url
-            }
+            assignSelectedURL(url, for: type)
         case .failure(let error):
             viewModel.errorMessage = error.localizedDescription
+        }
+    }
+
+    private func assignSelectedURL(_ url: URL, for type: PDFType) {
+        switch type {
+        case .display:
+            viewModel.displayPDFURL = url
+        case .ocr:
+            viewModel.ocrPDFURL = url
+        case .original:
+            viewModel.originalPDFURL = url
         }
     }
 }
@@ -193,22 +197,20 @@ struct PDFBundleImportView: View {
 
 private struct PageSelectionView: View {
     @Bindable var viewModel: PDFImportViewModel
-
-    private var columns: [GridItem] {
-        [GridItem(.adaptive(minimum: 140, maximum: 220), spacing: 12)]
-    }
+    @State private var previewPage: PDFImportViewModel.ImportPage?
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 selectionToolbar
 
-                LazyVGrid(columns: columns, spacing: 12) {
+                LazyVStack(spacing: 10) {
                     ForEach(viewModel.pagePreviews) { page in
-                        PageSelectionCard(
+                        PageSelectionRow(
                             page: page,
                             isSelected: viewModel.isSelected(page),
-                            onToggleSelection: { viewModel.toggleSelection(for: page) }
+                            onToggleSelection: { viewModel.toggleSelection(for: page) },
+                            onPreview: { previewPage = page }
                         )
                     }
                 }
@@ -217,12 +219,21 @@ private struct PageSelectionView: View {
         }
         .navigationTitle("Select Pages")
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(item: $previewPage) { page in
+            NavigationStack {
+                PagePreviewDetailView(page: page)
+            }
+        }
     }
 
     private var selectionToolbar: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Selected \(viewModel.selectedPageCount) of \(viewModel.totalPageCount)")
                 .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            Text("Use Select/Deselect buttons. Tap Preview to inspect the page.")
+                .font(.caption)
                 .foregroundStyle(.secondary)
 
             HStack(spacing: 12) {
@@ -262,50 +273,53 @@ private struct PageSelectionSummary: View {
     }
 }
 
-private struct PageSelectionCard: View {
+private struct PageSelectionRow: View {
     let page: PDFImportViewModel.ImportPage
     let isSelected: Bool
     let onToggleSelection: () -> Void
+    let onPreview: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("Page \(page.pageNumber)")
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                Spacer()
-                Button(action: onToggleSelection) {
-                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                        .font(.title3)
-                        .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
-                }
-                .buttonStyle(.plain)
-            }
-
-            NavigationLink {
-                PagePreviewDetailView(page: page)
-            } label: {
+        HStack(alignment: .top, spacing: 12) {
+            Button(action: onPreview) {
                 pagePreview
-                    .frame(height: 110)
-                    .frame(maxWidth: .infinity)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .frame(width: 88, height: 120)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 12)
+                        RoundedRectangle(cornerRadius: 10)
                             .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
                     )
             }
             .buttonStyle(.plain)
 
-            HStack(spacing: 6) {
-                VariantChip(title: "Display", systemImage: "doc.viewfinder", isActive: true)
-                VariantChip(title: "Original", systemImage: "doc.richtext", isActive: page.hasOriginal)
-                VariantChip(title: "OCR", systemImage: "text.viewfinder", isActive: page.hasOCR)
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 8) {
+                    Text("Page \(page.pageNumber)")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                    Spacer()
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                        .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                }
+
+                HStack(spacing: 6) {
+                    VariantChip(title: "Display", systemImage: "doc.viewfinder", isActive: true)
+                    VariantChip(title: "Original", systemImage: "doc.richtext", isActive: page.hasOriginal)
+                    VariantChip(title: "OCR", systemImage: "text.viewfinder", isActive: page.hasOCR)
+                }
+
+                HStack(spacing: 8) {
+                    Button("Preview", action: onPreview)
+                        .buttonStyle(.bordered)
+                    Button(isSelected ? "Deselect" : "Select", action: onToggleSelection)
+                        .buttonStyle(.borderedProminent)
+                }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(12)
         .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .contentShape(RoundedRectangle(cornerRadius: 14))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     @ViewBuilder
@@ -313,13 +327,13 @@ private struct PageSelectionCard: View {
         if let thumbnail = page.thumbnail {
             Image(uiImage: thumbnail)
                 .resizable()
-                .scaledToFill()
+                .scaledToFit()
         } else {
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 10)
                 .fill(Color.gray.opacity(0.15))
                 .overlay(
                     Text("\(page.pageNumber)")
-                        .font(.title)
+                        .font(.title2)
                         .foregroundStyle(.secondary)
                 )
         }

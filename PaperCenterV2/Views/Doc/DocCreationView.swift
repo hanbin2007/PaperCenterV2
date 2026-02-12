@@ -12,7 +12,7 @@ import SwiftData
 struct DocCreationView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-    @Query private var bundles: [PDFBundle]
+    @Query(sort: \PDFBundle.createdAt, order: .reverse) private var bundles: [PDFBundle]
 
     let bundle: PDFBundle?
 
@@ -21,6 +21,9 @@ struct DocCreationView: View {
     @State private var errorMessage: String?
     @State private var creationService: DocCreationService?
     @State private var assignmentViewModel: TagVariableAssignmentViewModel?
+    @State private var showingImportBundle = false
+    @State private var showingBundleCreationPrompt = false
+    @State private var hasPromptedBundleCreation = false
 
     init(bundle: PDFBundle? = nil) {
         self.bundle = bundle
@@ -37,18 +40,35 @@ struct DocCreationView: View {
 
                 if bundle == nil {
                     Section {
-                        Picker("Select PDFBundle", selection: $selectedBundle) {
-                            Text("Select a bundle").tag(nil as PDFBundle?)
-
-                            ForEach(bundles) { bundle in
-                                BundlePickerRow(bundle: bundle)
-                                    .tag(bundle as PDFBundle?)
+                        if bundles.isEmpty {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Label("No PDF bundles available", systemImage: "tray")
+                                    .foregroundStyle(.secondary)
                             }
+                        } else {
+                            Picker("Select PDFBundle", selection: $selectedBundle) {
+                                Text("Select a bundle").tag(nil as PDFBundle?)
+
+                                ForEach(bundles) { bundle in
+                                    BundlePickerRow(bundle: bundle)
+                                        .tag(bundle as PDFBundle?)
+                                }
+                            }
+                        }
+
+                        Button {
+                            showingImportBundle = true
+                        } label: {
+                            Label("Import PDF Bundle", systemImage: "plus.circle")
                         }
                     } header: {
                         Text("PDF Source")
                     } footer: {
-                        Text("Choose which PDF bundle to use as the source for this document")
+                        if bundles.isEmpty {
+                            Text("Create a PDF bundle first, then continue creating this document.")
+                        } else {
+                            Text("Choose which PDF bundle to use as the source for this document, or import a new bundle.")
+                        }
                     }
                 }
 
@@ -99,26 +119,53 @@ struct DocCreationView: View {
                     .disabled(!canCreate)
                 }
             }
+            .sheet(isPresented: $showingImportBundle) {
+                PDFBundleImportView()
+            }
             .onAppear {
                 creationService = DocCreationService(modelContext: modelContext)
                 if let bundle = bundle {
                     selectedBundle = bundle
+                } else if selectedBundle == nil {
+                    selectedBundle = bundles.first
                 }
                 assignmentViewModel = TagVariableAssignmentViewModel(
                     modelContext: modelContext,
                     entityType: .doc
                 )
+                promptForBundleCreationIfNeeded()
+            }
+            .onChange(of: bundles.map(\.id)) { _, _ in
+                if let selectedBundle,
+                   bundles.contains(where: { $0.id == selectedBundle.id }) == false {
+                    self.selectedBundle = nil
+                }
+                if bundle == nil, selectedBundle == nil {
+                    selectedBundle = bundles.first
+                }
+                promptForBundleCreationIfNeeded()
+            }
+            .alert("No PDF Bundle Available", isPresented: $showingBundleCreationPrompt) {
+                Button("Import Bundle") {
+                    showingImportBundle = true
+                }
+                Button("Not Now", role: .cancel) {}
+            } message: {
+                Text("Creating a document requires at least one PDF bundle.")
             }
         }
     }
 
     private var canCreate: Bool {
-        return !title.isEmpty && selectedBundle != nil
+        !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && selectedBundle != nil
     }
 
     private func createDocument() {
         guard let bundle = selectedBundle,
               let service = creationService else {
+            if self.bundle == nil, bundles.isEmpty {
+                promptForBundleCreationIfNeeded(force: true)
+            }
             errorMessage = "Missing required information"
             return
         }
@@ -133,6 +180,13 @@ struct DocCreationView: View {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    private func promptForBundleCreationIfNeeded(force: Bool = false) {
+        guard bundle == nil, bundles.isEmpty else { return }
+        guard force || !hasPromptedBundleCreation else { return }
+        hasPromptedBundleCreation = true
+        showingBundleCreationPrompt = true
     }
 }
 
