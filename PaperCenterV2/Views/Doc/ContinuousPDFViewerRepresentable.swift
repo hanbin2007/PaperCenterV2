@@ -26,6 +26,7 @@ struct ContinuousPDFViewerRepresentable: UIViewRepresentable {
     let jumpRequestID: Int
 
     let noteAnchors: [NoteAnchorOverlayItem]
+    let pageTagItems: [PageTagOverlayItem]
     let selectedNoteID: UUID?
     let focusAnchor: NoteAnchorOverlayItem?
     let isNoteCreateMode: Bool
@@ -57,6 +58,7 @@ struct ContinuousPDFViewerRepresentable: UIViewRepresentable {
         context.coordinator.apply(entries: entries, to: pdfView)
         context.coordinator.updateOverlay(
             anchors: noteAnchors,
+            pageTagItems: pageTagItems,
             selectedNoteID: selectedNoteID,
             isCreateMode: isNoteCreateMode,
             showsInlineNoteBubbles: showsInlineNoteBubbles,
@@ -71,6 +73,7 @@ struct ContinuousPDFViewerRepresentable: UIViewRepresentable {
         context.coordinator.apply(entries: entries, to: pdfView)
         context.coordinator.updateOverlay(
             anchors: noteAnchors,
+            pageTagItems: pageTagItems,
             selectedNoteID: selectedNoteID,
             isCreateMode: isNoteCreateMode,
             showsInlineNoteBubbles: showsInlineNoteBubbles,
@@ -87,6 +90,13 @@ struct ContinuousPDFViewerRepresentable: UIViewRepresentable {
     }
 
     final class Coordinator: NSObject {
+        private struct ViewportState {
+            let logicalPageID: UUID?
+            let composedPageIndex: Int?
+            let normalizedCenter: CGPoint?
+            let scaleFactor: CGFloat
+        }
+
         var parent: ContinuousPDFViewerRepresentable
 
         private weak var pdfView: PDFView?
@@ -148,23 +158,26 @@ struct ContinuousPDFViewerRepresentable: UIViewRepresentable {
 
             if let scrollView = pdfView.subviews.compactMap({ $0 as? UIScrollView }).first {
                 scrollView.isPagingEnabled = false
+                scrollView.decelerationRate = .normal
                 contentOffsetObserver = scrollView.observe(\.contentOffset, options: [.new]) { [weak self] _, _ in
-                    self?.overlay.refresh()
+                    self?.overlay.scheduleRefresh()
                 }
                 zoomScaleObserver = scrollView.observe(\.zoomScale, options: [.new]) { [weak self] _, _ in
-                    self?.overlay.refresh()
+                    self?.overlay.scheduleRefresh()
                 }
             }
         }
 
         func updateOverlay(
             anchors: [NoteAnchorOverlayItem],
+            pageTagItems: [PageTagOverlayItem],
             selectedNoteID: UUID?,
             isCreateMode: Bool,
             showsInlineNoteBubbles: Bool,
             isEditingEnabled: Bool
         ) {
             overlay.anchors = anchors
+            overlay.pageTags = pageTagItems
             overlay.selectedNoteID = selectedNoteID
             overlay.isCreateMode = isCreateMode
             overlay.showsContentBubbles = showsInlineNoteBubbles
@@ -178,6 +191,7 @@ struct ContinuousPDFViewerRepresentable: UIViewRepresentable {
                 return
             }
 
+            let previousViewport = captureViewportState(from: pdfView)
             signature = newSignature
             pageEntryByComposedIndex.removeAll()
             pageByComposedIndex.removeAll()
@@ -214,14 +228,22 @@ struct ContinuousPDFViewerRepresentable: UIViewRepresentable {
             pdfView.displaysPageBreaks = true
             pdfView.minScaleFactor = 0.6
             pdfView.maxScaleFactor = 6.0
-            pdfView.autoScales = true
+            pdfView.autoScales = previousViewport == nil
             pdfView.usePageViewController(false, withViewOptions: nil)
 
             overlay.pageByComposedIndex = pageByComposedIndex
-            overlay.refresh()
+            overlay.scheduleRefresh()
 
-            if composedIndex > 0 {
-                notifyFocusedComposedPageChanged(0)
+            var restoredComposedIndex: Int?
+            if let previousViewport {
+                restoredComposedIndex = restoreViewportState(previousViewport, on: pdfView)
+            } else if composedIndex > 0, let firstPage = document.page(at: 0) {
+                pdfView.go(to: firstPage)
+                restoredComposedIndex = 0
+            }
+
+            if let restoredComposedIndex {
+                notifyFocusedComposedPageChanged(restoredComposedIndex)
             }
         }
 
@@ -280,7 +302,7 @@ struct ContinuousPDFViewerRepresentable: UIViewRepresentable {
             let index = document.index(for: currentPage)
             guard index >= 0 else { return }
             notifyFocusedComposedPageChanged(index)
-            overlay.refresh()
+            overlay.scheduleRefresh()
         }
 
         private func notifyFocusedComposedPageChanged(_ index: Int) {
@@ -295,6 +317,135 @@ struct ContinuousPDFViewerRepresentable: UIViewRepresentable {
                     "\(entry.logicalPageID.uuidString)|\(entry.pageVersionID.uuidString)|\(entry.fileURL.absoluteString)|\(entry.sourcePageNumber)"
                 }
                 .joined(separator: "#")
+        }
+
+        private func captureViewportState(from pdfView: PDFView) -> ViewportState? {
+            guard let document = pdfView.document,
+                  let currentPage = pdfView.currentPage else {
+                return nil
+            }
+
+            let currentIndex = document.index(for: currentPage)
+            guard currentIndex >= 0 else { return nil }
+
+            let logicalPageID = pageEntryByComposedIndex[currentIndex]?.logicalPageID
+            let pageBounds = currentPage.bounds(for: .mediaBox)
+            let visibleRect = pdfView.convert(pdfView.bounds, to: currentPage)
+
+            var normalizedCenter: CGPoint?
+            if !visibleRect.isNull,
+               !visibleRect.isEmpty,
+               pageBounds.width > 0,
+               pageBounds.height > 0 {
+                normalizedCenter = CGPoint(
+                    x: clamp01((visibleRect.midX - pageBounds.minX) / pageBounds.width),
+                    y: clamp01((visibleRect.midY - pageBounds.minY) / pageBounds.height)
+                )
+            }
+
+            return ViewportState(
+                logicalPageID: logicalPageID,
+                composedPageIndex: currentIndex,
+                normalizedCenter: normalizedCenter,
+                scaleFactor: pdfView.scaleFactor
+            )
+        }
+
+        private func restoreViewportState(_ state: ViewportState, on pdfView: PDFView) -> Int? {
+            guard let document = pdfView.document, document.pageCount > 0 else {
+                return nil
+            }
+
+            let targetIndex = resolvedComposedIndex(for: state, pageCount: document.pageCount) ?? 0
+            guard let targetPage = document.page(at: targetIndex) else {
+                return nil
+            }
+
+            pdfView.go(to: targetPage)
+
+            let clampedScale = max(pdfView.minScaleFactor, min(pdfView.maxScaleFactor, state.scaleFactor))
+            if clampedScale.isFinite, clampedScale > 0 {
+                pdfView.autoScales = false
+                pdfView.scaleFactor = clampedScale
+            }
+
+            if let normalizedCenter = state.normalizedCenter {
+                restoreViewportCenter(
+                    normalizedCenter: normalizedCenter,
+                    on: targetPage,
+                    in: pdfView
+                )
+            }
+
+            return targetIndex
+        }
+
+        private func resolvedComposedIndex(for state: ViewportState, pageCount: Int) -> Int? {
+            if let logicalPageID = state.logicalPageID,
+               let matchedIndex = pageEntryByComposedIndex.first(where: { $0.value.logicalPageID == logicalPageID })?.key,
+               matchedIndex >= 0,
+               matchedIndex < pageCount {
+                return matchedIndex
+            }
+
+            if let composedPageIndex = state.composedPageIndex,
+               composedPageIndex >= 0,
+               composedPageIndex < pageCount {
+                return composedPageIndex
+            }
+
+            return nil
+        }
+
+        private func restoreViewportCenter(
+            normalizedCenter: CGPoint,
+            on page: PDFPage,
+            in pdfView: PDFView
+        ) {
+            let pageBounds = page.bounds(for: .mediaBox)
+            guard pageBounds.width > 0, pageBounds.height > 0 else { return }
+
+            let clampedCenter = CGPoint(
+                x: clamp01(normalizedCenter.x),
+                y: clamp01(normalizedCenter.y)
+            )
+            let centerPoint = CGPoint(
+                x: pageBounds.minX + clampedCenter.x * pageBounds.width,
+                y: pageBounds.minY + clampedCenter.y * pageBounds.height
+            )
+
+            var visibleRect = pdfView.convert(pdfView.bounds, to: page)
+            if visibleRect.isNull || visibleRect.isEmpty {
+                let scale = max(pdfView.scaleFactor, 0.01)
+                visibleRect = CGRect(
+                    x: pageBounds.minX,
+                    y: pageBounds.minY,
+                    width: pageBounds.width / scale,
+                    height: pageBounds.height / scale
+                )
+            }
+
+            var targetRect = CGRect(
+                x: centerPoint.x - visibleRect.width / 2,
+                y: centerPoint.y - visibleRect.height / 2,
+                width: min(visibleRect.width, pageBounds.width),
+                height: min(visibleRect.height, pageBounds.height)
+            )
+
+            targetRect.origin.x = max(
+                pageBounds.minX,
+                min(pageBounds.maxX - targetRect.width, targetRect.origin.x)
+            )
+            targetRect.origin.y = max(
+                pageBounds.minY,
+                min(pageBounds.maxY - targetRect.height, targetRect.origin.y)
+            )
+
+            pdfView.go(to: targetRect, on: page)
+        }
+
+        private func clamp01(_ value: CGFloat) -> CGFloat {
+            max(0, min(1, value))
         }
     }
 }

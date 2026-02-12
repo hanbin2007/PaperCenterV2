@@ -17,6 +17,125 @@ struct NoteAnchorOverlayItem: Identifiable {
     let body: String
 }
 
+struct PageTagOverlayChip: Identifiable {
+    let id: UUID
+    let name: String
+    let colorHex: String
+}
+
+struct PageTagOverlayItem: Identifiable {
+    let composedPageIndex: Int
+    let pageGroupTitle: String
+    let chips: [PageTagOverlayChip]
+
+    var id: Int { composedPageIndex }
+}
+
+private final class InsetLabel: UILabel {
+    private let insets = UIEdgeInsets(top: 3, left: 8, bottom: 3, right: 8)
+
+    override func drawText(in rect: CGRect) {
+        super.drawText(in: rect.inset(by: insets))
+    }
+
+    override var intrinsicContentSize: CGSize {
+        let base = super.intrinsicContentSize
+        return CGSize(
+            width: base.width + insets.left + insets.right,
+            height: base.height + insets.top + insets.bottom
+        )
+    }
+}
+
+private final class PageTagBadgeView: UIView {
+    private let titleLabel = UILabel()
+    private let chipsStack = UIStackView()
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        isUserInteractionEnabled = false
+        backgroundColor = .clear
+
+        titleLabel.font = .systemFont(ofSize: 12, weight: .semibold)
+        titleLabel.textColor = .secondaryLabel
+        titleLabel.textAlignment = .right
+        titleLabel.numberOfLines = 1
+
+        chipsStack.axis = .vertical
+        chipsStack.alignment = .trailing
+        chipsStack.spacing = 6
+        chipsStack.distribution = .fill
+
+        addSubview(titleLabel)
+        addSubview(chipsStack)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        let inset: CGFloat = 8
+        let contentRect = bounds.insetBy(dx: inset, dy: inset)
+        let titleHeight: CGFloat = titleLabel.isHidden ? 0 : 16
+        titleLabel.frame = CGRect(
+            x: contentRect.minX,
+            y: contentRect.minY,
+            width: contentRect.width,
+            height: titleHeight
+        )
+        chipsStack.frame = CGRect(
+            x: contentRect.minX,
+            y: titleLabel.frame.maxY + (titleLabel.isHidden ? 0 : 6),
+            width: contentRect.width,
+            height: max(0, contentRect.maxY - titleLabel.frame.maxY - (titleLabel.isHidden ? 0 : 6))
+        )
+    }
+
+    func configure(groupTitle: String, chips: [PageTagOverlayChip]) {
+        let trimmedGroup = groupTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmedGroup.isEmpty {
+            titleLabel.isHidden = true
+            titleLabel.text = nil
+        } else {
+            titleLabel.isHidden = false
+            titleLabel.text = trimmedGroup
+        }
+
+        chipsStack.arrangedSubviews.forEach { view in
+            chipsStack.removeArrangedSubview(view)
+            view.removeFromSuperview()
+        }
+
+        let maxVisible = 4
+        let visibleChips = Array(chips.prefix(maxVisible))
+        for chip in visibleChips {
+            let label = InsetLabel()
+            label.font = .systemFont(ofSize: 11, weight: .semibold)
+            label.text = chip.name
+            label.textAlignment = .right
+            label.textColor = UIColor.paperHex(chip.colorHex, fallback: .systemBlue)
+            label.backgroundColor = UIColor.paperHex(chip.colorHex, fallback: .systemBlue).withAlphaComponent(0.15)
+            label.layer.cornerRadius = 10
+            label.layer.cornerCurve = .continuous
+            label.layer.masksToBounds = true
+            label.numberOfLines = 1
+            chipsStack.addArrangedSubview(label)
+        }
+
+        let overflow = chips.count - visibleChips.count
+        if overflow > 0 {
+            let moreLabel = UILabel()
+            moreLabel.font = .systemFont(ofSize: 11, weight: .medium)
+            moreLabel.textColor = .secondaryLabel
+            moreLabel.textAlignment = .right
+            moreLabel.text = "+\(overflow) more"
+            chipsStack.addArrangedSubview(moreLabel)
+        }
+    }
+}
+
 private final class NoteContentBubbleView: UIView {
     private let titleLabel = UILabel()
     private let bodyLabel = UILabel()
@@ -92,22 +211,22 @@ final class NoteAnchorOverlayView: UIView, UIGestureRecognizerDelegate {
     weak var pdfView: PDFView? {
         didSet {
             setNeedsLayout()
-            refresh()
+            scheduleRefresh()
         }
     }
 
     var anchors: [NoteAnchorOverlayItem] = [] {
-        didSet { refresh() }
+        didSet { scheduleRefresh() }
     }
 
     var selectedNoteID: UUID? {
-        didSet { refresh() }
+        didSet { scheduleRefresh() }
     }
 
     var isCreateMode: Bool = false {
         didSet {
             activeState = .idle
-            refresh()
+            scheduleRefresh()
         }
     }
 
@@ -116,25 +235,31 @@ final class NoteAnchorOverlayView: UIView, UIGestureRecognizerDelegate {
             if !isEditingEnabled {
                 activeState = .idle
             }
-            refresh()
+            scheduleRefresh()
         }
     }
 
     var showsContentBubbles: Bool = true {
-        didSet { refresh() }
+        didSet { scheduleRefresh() }
+    }
+
+    var pageTags: [PageTagOverlayItem] = [] {
+        didSet { scheduleRefresh() }
     }
 
     var pageByComposedIndex: [Int: PDFPage] = [:] {
         didSet {
             reversePageIndexMap = Dictionary(uniqueKeysWithValues: pageByComposedIndex.map { (ObjectIdentifier($0.value), $0.key) })
-            refresh()
+            scheduleRefresh()
         }
     }
 
     private var reversePageIndexMap: [ObjectIdentifier: Int] = [:]
     private var shapeLayers: [UUID: CAShapeLayer] = [:]
     private var bubbleViews: [UUID: NoteContentBubbleView] = [:]
+    private var tagBadgeViews: [Int: PageTagBadgeView] = [:]
     private var rectCache: [UUID: CGRect] = [:]
+    private var refreshScheduled = false
     private let previewLayer = CAShapeLayer()
 
     private enum EditMode {
@@ -149,7 +274,7 @@ final class NoteAnchorOverlayView: UIView, UIGestureRecognizerDelegate {
     }
 
     private var activeState: ActiveState = .idle {
-        didSet { refresh() }
+        didSet { scheduleRefresh() }
     }
 
     private lazy var tapGesture: UITapGestureRecognizer = {
@@ -195,6 +320,16 @@ final class NoteAnchorOverlayView: UIView, UIGestureRecognizerDelegate {
         refresh()
     }
 
+    func scheduleRefresh() {
+        guard !refreshScheduled else { return }
+        refreshScheduled = true
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.refreshScheduled = false
+            self.refresh()
+        }
+    }
+
     override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
         // Never intercept multi-touch so PDFView pinch zoom always works.
         if let touches = event?.allTouches, touches.count > 1 {
@@ -203,6 +338,11 @@ final class NoteAnchorOverlayView: UIView, UIGestureRecognizerDelegate {
 
         if isCreateMode && isEditingEnabled {
             return true
+        }
+
+        // In view mode, pass touches through to PDFView for smooth inertial scrolling.
+        if !isEditingEnabled {
+            return false
         }
 
         return hitTestNote(at: point) != nil
@@ -214,15 +354,21 @@ final class NoteAnchorOverlayView: UIView, UIGestureRecognizerDelegate {
             shapeLayers.removeAll()
             bubbleViews.values.forEach { $0.removeFromSuperview() }
             bubbleViews.removeAll()
+            tagBadgeViews.values.forEach { $0.removeFromSuperview() }
+            tagBadgeViews.removeAll()
             rectCache.removeAll()
             return
         }
 
+        let visiblePageRects = visiblePageRectsAroundCurrent(pdfView: pdfView)
         var renderedIDs = Set<UUID>()
         rectCache.removeAll(keepingCapacity: true)
 
         for anchor in anchors {
-            guard let page = pageByComposedIndex[anchor.composedPageIndex] else { continue }
+            guard let page = pageByComposedIndex[anchor.composedPageIndex],
+                  let pageOverlayRect = visiblePageRects[anchor.composedPageIndex] else {
+                continue
+            }
 
             var normalizedRect = anchor.normalizedRect
             if case .editing(let noteID, _, _, _, _, let workingRect) = activeState,
@@ -271,12 +417,6 @@ final class NoteAnchorOverlayView: UIView, UIGestureRecognizerDelegate {
                     bubbleViews[anchor.id] = view
                     return view
                 }()
-                let pageOverlayRect = overlayRectFor(
-                    normalizedRect: CGRect(x: 0, y: 0, width: 1, height: 1),
-                    page: page,
-                    pdfView: pdfView
-                )
-
                 if let bubbleFrame = bubbleFrame(for: overlayRect, pageRect: pageOverlayRect) {
                     bubble.frame = bubbleFrame
                     bubble.configure(
@@ -309,6 +449,8 @@ final class NoteAnchorOverlayView: UIView, UIGestureRecognizerDelegate {
         } else {
             previewLayer.isHidden = true
         }
+
+        refreshPageTagBadges(visiblePageRects: visiblePageRects)
     }
 
     // MARK: - Gestures
@@ -569,6 +711,115 @@ final class NoteAnchorOverlayView: UIView, UIGestureRecognizerDelegate {
         return CGRect(x: x, y: y, width: width, height: fixedHeight)
     }
 
+    private func visiblePageRectsAroundCurrent(pdfView: PDFView) -> [Int: CGRect] {
+        guard let document = pdfView.document,
+              document.pageCount > 0 else {
+            return [:]
+        }
+
+        let currentIndex: Int
+        if let currentPage = pdfView.currentPage {
+            let index = document.index(for: currentPage)
+            currentIndex = index >= 0 ? index : 0
+        } else {
+            currentIndex = 0
+        }
+
+        let scanRadius = 4
+        let lower = max(0, currentIndex - scanRadius)
+        let upper = min(document.pageCount - 1, currentIndex + scanRadius)
+        let expandedBounds = bounds.insetBy(dx: -120, dy: -160)
+
+        var rects: [Int: CGRect] = [:]
+        for index in lower...upper {
+            guard let page = pageByComposedIndex[index] else { continue }
+            let pageRect = overlayRectFor(
+                normalizedRect: CGRect(x: 0, y: 0, width: 1, height: 1),
+                page: page,
+                pdfView: pdfView
+            )
+            guard !pageRect.isNull,
+                  !pageRect.isEmpty,
+                  pageRect.intersects(expandedBounds) else {
+                continue
+            }
+            rects[index] = pageRect
+        }
+
+        return rects
+    }
+
+    private func refreshPageTagBadges(visiblePageRects: [Int: CGRect]) {
+        var renderedIndices = Set<Int>()
+
+        for item in pageTags {
+            guard !item.chips.isEmpty,
+                  let pageRect = visiblePageRects[item.composedPageIndex] else {
+                continue
+            }
+
+            guard !pageRect.isNull,
+                  !pageRect.isEmpty,
+                  pageRect.intersects(bounds),
+                  let badgeFrame = tagBadgeFrame(for: item, pageRect: pageRect) else {
+                tagBadgeViews[item.composedPageIndex]?.isHidden = true
+                continue
+            }
+
+            renderedIndices.insert(item.composedPageIndex)
+            let badge = tagBadgeViews[item.composedPageIndex] ?? {
+                let view = PageTagBadgeView()
+                addSubview(view)
+                tagBadgeViews[item.composedPageIndex] = view
+                return view
+            }()
+            badge.frame = badgeFrame
+            badge.configure(groupTitle: item.pageGroupTitle, chips: item.chips)
+            badge.isHidden = false
+        }
+
+        let obsoleteIndices = Set(tagBadgeViews.keys).subtracting(renderedIndices)
+        for index in obsoleteIndices {
+            tagBadgeViews[index]?.removeFromSuperview()
+            tagBadgeViews.removeValue(forKey: index)
+        }
+    }
+
+    private func tagBadgeFrame(for item: PageTagOverlayItem, pageRect: CGRect) -> CGRect? {
+        let edgeInset: CGFloat = 8
+        let horizontalGap: CGFloat = 0
+        let preferredWidth: CGFloat = min(220, max(bounds.width * 0.22, 150))
+        let minimumWidth: CGFloat = 120
+        let availableLeftWidth = pageRect.minX - horizontalGap - edgeInset
+        guard availableLeftWidth >= minimumWidth else {
+            // Keep tags out of the PDF content area when zooming leaves no side margin.
+            return nil
+        }
+
+        let width = min(preferredWidth, availableLeftWidth)
+        let visibleChipCount = min(item.chips.count, 4)
+        let overflowLine = item.chips.count > visibleChipCount ? 1 : 0
+        let totalLines = visibleChipCount + overflowLine
+        guard totalLines > 0 else { return nil }
+
+        let hasTitle = !item.pageGroupTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let titleBlockHeight: CGFloat = hasTitle ? 22 : 0
+        let lineHeight: CGFloat = 20
+        let lineSpacing: CGFloat = 6
+        let chipsHeight = CGFloat(totalLines) * lineHeight
+            + CGFloat(max(0, totalLines - 1)) * lineSpacing
+        let height = 16 + titleBlockHeight + chipsHeight
+
+        var y = pageRect.minY
+        if y + height > bounds.height - edgeInset {
+            y = bounds.height - height - edgeInset
+        }
+        y = max(edgeInset, y)
+
+        let x = pageRect.minX - horizontalGap - width
+        return CGRect(x: x, y: y, width: width, height: height)
+    }
+
     override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
         if gestureRecognizer === tapGesture {
             return !isCreateMode
@@ -589,5 +840,38 @@ final class NoteAnchorOverlayView: UIView, UIGestureRecognizerDelegate {
 
         let point = pan.location(in: self)
         return hitTestNote(at: point) != nil
+    }
+}
+
+private extension UIColor {
+    static func paperHex(_ hex: String, fallback: UIColor) -> UIColor {
+        let value = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int: UInt64 = 0
+        guard Scanner(string: value).scanHexInt64(&int) else {
+            return fallback
+        }
+
+        let a: UInt64
+        let r: UInt64
+        let g: UInt64
+        let b: UInt64
+
+        switch value.count {
+        case 3:
+            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
+        case 6:
+            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+        case 8:
+            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+        default:
+            return fallback
+        }
+
+        return UIColor(
+            red: CGFloat(r) / 255,
+            green: CGFloat(g) / 255,
+            blue: CGFloat(b) / 255,
+            alpha: CGFloat(a) / 255
+        )
     }
 }

@@ -92,7 +92,8 @@ struct UniversalDocViewer: View {
     @State private var notesDrawerExpanded = true
     @State private var notesPanelCollapsed = false
     @State private var showsInlineNoteBubbles = true
-    @State private var noteInteractionMode: NoteInteractionMode = .edit
+    @State private var noteInteractionMode: NoteInteractionMode = .view
+    @State private var loadedNotesSignature = ""
 
     @State private var notesViewModel: DocNotesEditorViewModel?
 
@@ -204,9 +205,8 @@ struct UniversalDocViewer: View {
         return "\(focusedGroupEntry.docTitle) · \(focusedGroupEntry.pageGroupTitle)"
     }
 
-    private var focusedTags: [Tag] {
-        guard let focusedEntry else { return [] }
-        return dataProvider.tags(pageID: focusedEntry.slot.pageID)
+    private var logicalEntryByID: [UUID: ViewerLogicalEntry] {
+        Dictionary(uniqueKeysWithValues: logicalEntries.map { ($0.id, $0) })
     }
 
     private var composedPDFEntries: [ComposedPDFPageEntry] {
@@ -265,6 +265,29 @@ struct UniversalDocViewer: View {
                 ),
                 title: note.title,
                 body: note.body
+            )
+        }
+    }
+
+    private var pageTagItems: [PageTagOverlayItem] {
+        guard !isOCRMode else { return [] }
+
+        return composedPDFEntries.enumerated().compactMap { composedIndex, composedEntry in
+            let tags = dataProvider.tags(pageID: composedEntry.pageID)
+            guard !tags.isEmpty else { return nil }
+
+            let chips = tags.map { tag in
+                PageTagOverlayChip(
+                    id: tag.id,
+                    name: tag.name,
+                    colorHex: tag.color
+                )
+            }
+            let groupTitle = logicalEntryByID[composedEntry.logicalPageID]?.slot.pageGroupTitle ?? ""
+            return PageTagOverlayItem(
+                composedPageIndex: composedIndex,
+                pageGroupTitle: groupTitle,
+                chips: chips
             )
         }
     }
@@ -367,11 +390,6 @@ struct UniversalDocViewer: View {
 
             if horizontalSizeClass == .regular {
                 HStack(spacing: 0) {
-                    metadataRail
-                        .frame(width: 220)
-
-                    Divider()
-
                     mainReader
 
                     if !isOCRMode {
@@ -382,10 +400,7 @@ struct UniversalDocViewer: View {
                     }
                 }
             } else {
-                VStack(spacing: 0) {
-                    metadataInline
-                    mainReader
-                }
+                mainReader
                 .safeAreaInset(edge: .bottom) {
                     if !isOCRMode {
                         notesDrawer
@@ -475,6 +490,11 @@ struct UniversalDocViewer: View {
                         .font(.title3)
                 }
             }
+
+            Text(focusedPageGroupName)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.horizontal)
         .padding(.vertical, 10)
@@ -604,44 +624,6 @@ struct UniversalDocViewer: View {
         }
     }
 
-    private var metadataRail: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(focusedPageGroupName)
-                .font(.headline)
-                .lineLimit(2)
-
-            if focusedTags.isEmpty {
-                Text("No tags")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            } else {
-                TagDisplayView(tags: focusedTags)
-            }
-
-            Spacer()
-        }
-        .padding(12)
-    }
-
-    private var metadataInline: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(focusedPageGroupName)
-                .font(.headline)
-                .lineLimit(1)
-
-            if focusedTags.isEmpty {
-                Text("No tags")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            } else {
-                TagDisplayView(tags: focusedTags)
-            }
-        }
-        .padding(.horizontal)
-        .padding(.vertical, 10)
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
     @ViewBuilder
     private var mainReader: some View {
         if isOCRMode {
@@ -657,6 +639,7 @@ struct UniversalDocViewer: View {
             jumpToComposedPageIndex: pendingJumpComposedIndex,
             jumpRequestID: jumpRequestID,
             noteAnchors: noteAnchors,
+            pageTagItems: pageTagItems,
             selectedNoteID: selectedNoteID,
             focusAnchor: selectedNoteAnchor,
             isNoteCreateMode: isNoteCreateMode && canEditNotes,
@@ -848,6 +831,7 @@ struct UniversalDocViewer: View {
     }
 
     private func applySource(_ source: UniversalDocViewerSource) {
+        let wasOCRMode = isOCRMode
         switch sourceApplyScope {
         case .focused:
             store.changeSourceForFocusedPage(to: source)
@@ -855,7 +839,10 @@ struct UniversalDocViewer: View {
             store.changeSourceForAllPages(to: source, using: dataProvider)
         }
 
-        if let focusedComposedIndex {
+        // Keep viewport stable when switching between PDF sources (Display/Original).
+        // Only request an explicit jump when OCR mode is involved.
+        if (wasOCRMode || source == .ocr),
+           let focusedComposedIndex {
             requestJump(to: focusedComposedIndex)
         }
         syncNotesForFocusedGroup()
@@ -897,7 +884,12 @@ struct UniversalDocViewer: View {
 
     private func syncNotesForFocusedGroup() {
         guard let notesViewModel else { return }
-        notesViewModel.loadNotes(pageVersionIDs: currentNotesPageVersionIDs)
+        let pageVersionIDs = currentNotesPageVersionIDs
+        let signature = pageVersionIDs.map(\.uuidString).joined(separator: "|")
+        guard signature != loadedNotesSignature else { return }
+
+        loadedNotesSignature = signature
+        notesViewModel.loadNotes(pageVersionIDs: pageVersionIDs)
     }
 
     private func createRootNote(composedIndex: Int, normalizedRect: CGRect) {

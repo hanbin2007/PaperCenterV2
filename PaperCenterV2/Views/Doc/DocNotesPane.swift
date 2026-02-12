@@ -35,11 +35,13 @@ struct DocNotesPane: View {
     private var sectionedNotes: [NotesSection] {
         var seen = Set<UUID>()
         let orderedIDs = pageVersionIDs.filter { seen.insert($0).inserted }
-        return orderedIDs.map { pageVersionID in
-            NotesSection(
+        return orderedIDs.compactMap { pageVersionID in
+            let nodes = flattenedNotes(for: pageVersionID)
+            guard !nodes.isEmpty else { return nil }
+            return NotesSection(
                 pageVersionID: pageVersionID,
                 title: pageSectionTitles[pageVersionID] ?? "Page",
-                nodes: flattenedNotes(for: pageVersionID)
+                nodes: nodes
             )
         }
     }
@@ -146,14 +148,8 @@ struct DocNotesPane: View {
                                     .foregroundStyle(.secondary)
                                     .padding(.horizontal, 2)
 
-                                if section.nodes.isEmpty {
-                                    Text("No notes on this page")
-                                        .font(.caption2)
-                                        .foregroundStyle(.secondary)
-                                } else {
-                                    ForEach(section.nodes) { item in
-                                        noteRow(item)
-                                    }
+                                ForEach(section.nodes) { item in
+                                    noteRow(item)
                                 }
                             }
                             .padding(.vertical, 4)
