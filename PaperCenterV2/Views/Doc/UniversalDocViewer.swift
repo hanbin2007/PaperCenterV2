@@ -80,7 +80,21 @@ struct UniversalDocViewer: View {
 
     @Bindable var store: UniversalDocSessionStore
     let dataProvider: UniversalDocDataProvider
+    let initialSelectedNoteID: UUID?
     let onPageVersionCreated: (_ logicalPageID: UUID, _ pageVersionID: UUID) -> Void
+
+    init(
+        store: UniversalDocSessionStore,
+        dataProvider: UniversalDocDataProvider,
+        initialSelectedNoteID: UUID? = nil,
+        onPageVersionCreated: @escaping (_ logicalPageID: UUID, _ pageVersionID: UUID) -> Void
+    ) {
+        self._store = Bindable(store)
+        self.dataProvider = dataProvider
+        self.initialSelectedNoteID = initialSelectedNoteID
+        self.onPageVersionCreated = onPageVersionCreated
+        _pendingInitialNoteID = State(initialValue: initialSelectedNoteID)
+    }
 
     @State private var sourceApplyScope: SourceApplyScope = .focused
     @State private var showingCreateVersionSheet = false
@@ -94,6 +108,7 @@ struct UniversalDocViewer: View {
     @State private var showsInlineNoteBubbles = true
     @State private var noteInteractionMode: NoteInteractionMode = .view
     @State private var loadedNotesSignature = ""
+    @State private var pendingInitialNoteID: UUID?
 
     @State private var notesViewModel: DocNotesEditorViewModel?
 
@@ -369,12 +384,14 @@ struct UniversalDocViewer: View {
             }
             ensureFocusSeeded()
             syncNotesForFocusedGroup()
+            applyInitialNoteSelectionIfPossible()
             if let focusedComposedIndex, focusedComposedIndex != 0 {
                 requestJump(to: focusedComposedIndex)
             }
         }
         .onChange(of: store.focusedLogicalPageID) { _, _ in
             syncNotesForFocusedGroup()
+            applyInitialNoteSelectionIfPossible()
             isNoteCreateMode = false
         }
         .onChange(of: noteInteractionMode) { _, newValue in
@@ -890,6 +907,24 @@ struct UniversalDocViewer: View {
 
         loadedNotesSignature = signature
         notesViewModel.loadNotes(pageVersionIDs: pageVersionIDs)
+        applyInitialNoteSelectionIfPossible()
+    }
+
+    private func applyInitialNoteSelectionIfPossible() {
+        guard let pendingInitialNoteID,
+              let notesViewModel,
+              let note = notesViewModel.noteIndex[pendingInitialNoteID],
+              let composedIndex = composedIndexByPageVersionID[note.pageVersionID] else {
+            return
+        }
+
+        notesViewModel.selectedNoteID = pendingInitialNoteID
+        if composedIndex >= 0, composedIndex < composedPDFEntries.count {
+            let logicalPageID = composedPDFEntries[composedIndex].logicalPageID
+            store.setFocusedPage(logicalPageID)
+            requestJump(to: composedIndex)
+        }
+        self.pendingInitialNoteID = nil
     }
 
     private func createRootNote(composedIndex: Int, normalizedRect: CGRect) {
@@ -1001,6 +1036,9 @@ private struct CreatePageVersionSheet: View {
     @State private var inheritNoteBlocks = false
     @State private var isSaving = false
     @State private var errorMessage: String?
+    @State private var showingImportBundle = false
+    @State private var showingBundleCreationPrompt = false
+    @State private var hasPromptedBundleCreation = false
 
     private var selectedBundle: PDFBundle? {
         guard let selectedBundleID else { return nil }
@@ -1011,12 +1049,25 @@ private struct CreatePageVersionSheet: View {
         NavigationStack {
             Form {
                 Section("Target") {
-                    Picker("Bundle", selection: $selectedBundleID) {
-                        ForEach(bundles) { bundle in
-                            Text(bundle.displayName).tag(bundle.id as UUID?)
+                    if bundles.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Label("No PDF bundles available", systemImage: "tray")
+                                .foregroundStyle(.secondary)
                         }
+                    } else {
+                        Picker("Bundle", selection: $selectedBundleID) {
+                            ForEach(bundles) { bundle in
+                                Text(bundle.displayName).tag(bundle.id as UUID?)
+                            }
+                        }
+                        Stepper("Page Number: \(pageNumber)", value: $pageNumber, in: 1...9999)
                     }
-                    Stepper("Page Number: \(pageNumber)", value: $pageNumber, in: 1...9999)
+
+                    Button {
+                        showingImportBundle = true
+                    } label: {
+                        Label("Import PDF Bundle", systemImage: "plus.circle")
+                    }
                 }
 
                 Section("Inherit From Base Version") {
@@ -1046,8 +1097,29 @@ private struct CreatePageVersionSheet: View {
                     .disabled(!canCreate || isSaving)
                 }
             }
+            .sheet(isPresented: $showingImportBundle) {
+                PDFBundleImportView()
+            }
             .onAppear {
                 seedDefaultsIfNeeded()
+                promptForBundleCreationIfNeeded()
+            }
+            .onChange(of: bundles.map(\.id)) { _, _ in
+                if bundles.isEmpty {
+                    selectedBundleID = nil
+                } else if selectedBundle == nil {
+                    selectedBundleID = nil
+                    seedDefaultsIfNeeded()
+                }
+                promptForBundleCreationIfNeeded()
+            }
+            .alert("No PDF Bundle Available", isPresented: $showingBundleCreationPrompt) {
+                Button("Import Bundle") {
+                    showingImportBundle = true
+                }
+                Button("Not Now", role: .cancel) {}
+            } message: {
+                Text("Creating a new page version requires at least one PDF bundle.")
             }
         }
     }
@@ -1058,9 +1130,19 @@ private struct CreatePageVersionSheet: View {
 
     private func seedDefaultsIfNeeded() {
         guard selectedBundleID == nil else { return }
-        guard let page = fetchPage() else { return }
-        selectedBundleID = page.currentPDFBundleID
-        pageNumber = page.currentPageNumber
+        guard !bundles.isEmpty else { return }
+        guard let page = fetchPage() else {
+            selectedBundleID = bundles.first?.id
+            return
+        }
+
+        let preferredBundleID = page.currentPDFBundleID
+        if bundles.contains(where: { $0.id == preferredBundleID }) {
+            selectedBundleID = preferredBundleID
+        } else {
+            selectedBundleID = bundles.first?.id
+        }
+        pageNumber = max(page.currentPageNumber, 1)
     }
 
     private func createVersion() {
@@ -1069,6 +1151,9 @@ private struct CreatePageVersionSheet: View {
             return
         }
         guard let selectedBundle else {
+            if bundles.isEmpty {
+                promptForBundleCreationIfNeeded(force: true)
+            }
             errorMessage = "Please select a bundle."
             return
         }
@@ -1101,6 +1186,13 @@ private struct CreatePageVersionSheet: View {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    private func promptForBundleCreationIfNeeded(force: Bool = false) {
+        guard bundles.isEmpty else { return }
+        guard force || !hasPromptedBundleCreation else { return }
+        hasPromptedBundleCreation = true
+        showingBundleCreationPrompt = true
     }
 
     private func fetchPage() -> Page? {

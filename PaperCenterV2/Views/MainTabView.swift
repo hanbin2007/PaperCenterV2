@@ -16,6 +16,11 @@ struct MainTabView: View {
                     Label("Documents", systemImage: "doc.text")
                 }
 
+            GlobalSearchView()
+                .tabItem {
+                    Label("Search", systemImage: "magnifyingglass")
+                }
+
             PDFBundleListView()
                 .tabItem {
                     Label("Bundles", systemImage: "folder")

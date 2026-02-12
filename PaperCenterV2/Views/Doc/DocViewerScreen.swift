@@ -12,12 +12,22 @@ struct DocViewerScreen: View {
     @Environment(\.modelContext) private var modelContext
 
     let doc: Doc
+    let launchContext: DocViewerLaunchContext?
 
     @State private var sessionStore: UniversalDocSessionStore?
     @State private var dataProvider: UniversalDocDataProvider?
     @State private var errorMessage: String?
     @State private var showingStructureEditor = false
     @State private var readingGroupID: UUID?
+    @State private var pendingLaunchContext: DocViewerLaunchContext?
+    @State private var initialSelectedNoteID: UUID?
+
+    init(doc: Doc, launchContext: DocViewerLaunchContext? = nil) {
+        self.doc = doc
+        self.launchContext = launchContext
+        _pendingLaunchContext = State(initialValue: launchContext)
+        _initialSelectedNoteID = State(initialValue: launchContext?.preferredNoteID)
+    }
 
     private var readingScopeTitle: String {
         if let readingGroupID,
@@ -32,11 +42,13 @@ struct DocViewerScreen: View {
             if let sessionStore, let dataProvider {
                 UniversalDocViewer(
                     store: sessionStore,
-                    dataProvider: dataProvider
+                    dataProvider: dataProvider,
+                    initialSelectedNoteID: initialSelectedNoteID
                 ) { logicalPageID, createdVersionID in
                     rebuildSession(
                         focusLogicalPageID: logicalPageID,
-                        preferredVersionID: createdVersionID
+                        preferredVersionID: createdVersionID,
+                        preferredSource: nil
                     )
                 }
             } else if let errorMessage {
@@ -99,23 +111,38 @@ struct DocViewerScreen: View {
                doc.orderedPageGroups.contains(where: { $0.id == readingGroupID }) == false {
                 self.readingGroupID = nil
             }
-            rebuildSession(focusLogicalPageID: nil, preferredVersionID: nil)
+            rebuildSession(
+                focusLogicalPageID: nil,
+                preferredVersionID: nil,
+                preferredSource: nil
+            )
         }) {
             DocStructureEditorView(doc: doc)
         }
         .task(id: doc.id) {
             if sessionStore == nil {
-                rebuildSession(focusLogicalPageID: nil, preferredVersionID: nil)
+                let launch = pendingLaunchContext
+                rebuildSession(
+                    focusLogicalPageID: launch?.logicalPageID,
+                    preferredVersionID: launch?.preferredVersionID,
+                    preferredSource: launch?.preferredSource
+                )
+                pendingLaunchContext = nil
             }
         }
         .onChange(of: readingGroupID) { _, _ in
-            rebuildSession(focusLogicalPageID: nil, preferredVersionID: nil)
+            rebuildSession(
+                focusLogicalPageID: nil,
+                preferredVersionID: nil,
+                preferredSource: nil
+            )
         }
     }
 
     private func rebuildSession(
         focusLogicalPageID: UUID?,
-        preferredVersionID: UUID?
+        preferredVersionID: UUID?,
+        preferredSource: UniversalDocViewerSource?
     ) {
         let previous = sessionStore
         let previousSnapshots = previous?.selectionSnapshots()
@@ -143,6 +170,9 @@ struct DocViewerScreen: View {
                 logicalPageID: focusLogicalPageID,
                 to: preferredVersionID
             )
+        }
+        if let focusLogicalPageID, let preferredSource {
+            newStore.changeSource(logicalPageID: focusLogicalPageID, to: preferredSource)
         }
 
         sessionStore = newStore
