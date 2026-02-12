@@ -300,20 +300,17 @@ struct GlobalSearchOptions: Codable, Hashable {
 
 struct DocViewerLaunchContext: Hashable, Codable {
     let logicalPageID: UUID?
-    let preferredDocPageNumber: Int?
     let preferredVersionID: UUID?
     let preferredSource: UniversalDocViewerSource?
     let preferredNoteID: UUID?
 
     init(
         logicalPageID: UUID? = nil,
-        preferredDocPageNumber: Int? = nil,
         preferredVersionID: UUID? = nil,
         preferredSource: UniversalDocViewerSource? = nil,
         preferredNoteID: UUID? = nil
     ) {
         self.logicalPageID = logicalPageID
-        self.preferredDocPageNumber = preferredDocPageNumber
         self.preferredVersionID = preferredVersionID
         self.preferredSource = preferredSource
         self.preferredNoteID = preferredNoteID
@@ -331,7 +328,6 @@ struct GlobalSearchResult: Identifiable, Hashable {
     let pageGroupID: UUID?
     let pageGroupTitle: String?
     let logicalPageID: UUID?
-    let docPageNumber: Int?
     let pageVersionID: UUID?
     let noteID: UUID?
 
@@ -344,7 +340,6 @@ struct GlobalSearchResult: Identifiable, Hashable {
         case .ocrHit:
             return DocViewerLaunchContext(
                 logicalPageID: logicalPageID,
-                preferredDocPageNumber: docPageNumber,
                 preferredVersionID: pageVersionID,
                 preferredSource: .ocr,
                 preferredNoteID: nil
@@ -352,7 +347,6 @@ struct GlobalSearchResult: Identifiable, Hashable {
         case .noteHit:
             return DocViewerLaunchContext(
                 logicalPageID: logicalPageID,
-                preferredDocPageNumber: docPageNumber,
                 preferredVersionID: pageVersionID,
                 preferredSource: nil,
                 preferredNoteID: noteID
@@ -360,7 +354,6 @@ struct GlobalSearchResult: Identifiable, Hashable {
         case .versionMetadataHit:
             return DocViewerLaunchContext(
                 logicalPageID: logicalPageID,
-                preferredDocPageNumber: docPageNumber,
                 preferredVersionID: pageVersionID,
                 preferredSource: nil,
                 preferredNoteID: nil
@@ -368,7 +361,6 @@ struct GlobalSearchResult: Identifiable, Hashable {
         case .doc, .pageGroup, .page:
             return DocViewerLaunchContext(
                 logicalPageID: logicalPageID,
-                preferredDocPageNumber: docPageNumber,
                 preferredVersionID: pageVersionID,
                 preferredSource: nil,
                 preferredNoteID: nil

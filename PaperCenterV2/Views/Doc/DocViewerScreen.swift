@@ -47,7 +47,6 @@ struct DocViewerScreen: View {
                 ) { logicalPageID, createdVersionID in
                     rebuildSession(
                         focusLogicalPageID: logicalPageID,
-                        preferredDocPageNumber: nil,
                         preferredVersionID: createdVersionID,
                         preferredSource: nil
                     )
@@ -114,7 +113,6 @@ struct DocViewerScreen: View {
             }
             rebuildSession(
                 focusLogicalPageID: nil,
-                preferredDocPageNumber: nil,
                 preferredVersionID: nil,
                 preferredSource: nil
             )
@@ -126,7 +124,6 @@ struct DocViewerScreen: View {
                 let launch = pendingLaunchContext
                 rebuildSession(
                     focusLogicalPageID: launch?.logicalPageID,
-                    preferredDocPageNumber: launch?.preferredDocPageNumber,
                     preferredVersionID: launch?.preferredVersionID,
                     preferredSource: launch?.preferredSource
                 )
@@ -136,7 +133,6 @@ struct DocViewerScreen: View {
         .onChange(of: readingGroupID) { _, _ in
             rebuildSession(
                 focusLogicalPageID: nil,
-                preferredDocPageNumber: nil,
                 preferredVersionID: nil,
                 preferredSource: nil
             )
@@ -145,7 +141,6 @@ struct DocViewerScreen: View {
 
     private func rebuildSession(
         focusLogicalPageID: UUID?,
-        preferredDocPageNumber: Int?,
         preferredVersionID: UUID?,
         preferredSource: UniversalDocViewerSource?
     ) {
@@ -165,18 +160,9 @@ struct DocViewerScreen: View {
                 source: previousSnapshots.source,
                 fallbackLogicalPageID: focusLogicalPageID ?? previousLogicalPageID
             )
-        } else if let navigationIndex = resolvedNavigationIndex(
-            in: session,
-            logicalPageID: focusLogicalPageID,
-            preferredDocPageNumber: preferredDocPageNumber
-        ) {
-            newStore.navigate(to: navigationIndex)
-        }
-
-        if focusLogicalPageID == nil,
-           let preferredDocPageNumber,
-           let pageIndex = pageIndex(for: preferredDocPageNumber, in: session) {
-            newStore.navigate(to: pageIndex)
+        } else if let focusLogicalPageID,
+                  let index = session.slots.firstIndex(where: { $0.id == focusLogicalPageID }) {
+            newStore.navigate(to: index)
         }
 
         if let focusLogicalPageID, let preferredVersionID {
@@ -192,26 +178,5 @@ struct DocViewerScreen: View {
         sessionStore = newStore
         dataProvider = UniversalDocDataProvider(modelContext: modelContext)
         errorMessage = nil
-    }
-
-    private func resolvedNavigationIndex(
-        in session: UniversalDocSession,
-        logicalPageID: UUID?,
-        preferredDocPageNumber: Int?
-    ) -> Int? {
-        if let logicalPageID,
-           let index = session.slots.firstIndex(where: { $0.id == logicalPageID }) {
-            return index
-        }
-        if let preferredDocPageNumber {
-            return pageIndex(for: preferredDocPageNumber, in: session)
-        }
-        return nil
-    }
-
-    private func pageIndex(for docPageNumber: Int, in session: UniversalDocSession) -> Int? {
-        guard !session.slots.isEmpty else { return nil }
-        let clamped = min(max(docPageNumber, 1), session.slots.count)
-        return clamped - 1
     }
 }

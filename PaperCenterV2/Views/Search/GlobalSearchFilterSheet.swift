@@ -240,8 +240,6 @@ struct GlobalSearchFilterSheet: View {
 }
 
 private struct VariableRuleEditorRow: View {
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-
     @Binding var rule: VariableFilterRule
 
     let variables: [Variable]
@@ -265,8 +263,6 @@ private struct VariableRuleEditorRow: View {
                             .tag(variable.id)
                     }
                 }
-                .pickerStyle(.menu)
-                .frame(maxWidth: .infinity, alignment: .leading)
 
                 Spacer()
 
@@ -290,8 +286,6 @@ private struct VariableRuleEditorRow: View {
             }
         }
         .padding(.vertical, 4)
-        .padding(8)
-        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 10))
         .onAppear {
             normalizeRule()
         }
@@ -328,19 +322,26 @@ private struct VariableRuleEditorRow: View {
                     TextField("Min", value: intRangeMinBinding, format: .number)
                         .textFieldStyle(.roundedBorder)
                         .keyboardType(.numberPad)
-                        .frame(maxWidth: .infinity)
                     TextField("Max", value: intRangeMaxBinding, format: .number)
                         .textFieldStyle(.roundedBorder)
                         .keyboardType(.numberPad)
-                        .frame(maxWidth: .infinity)
                 }
 
-                rangeInclusionEditor(
-                    lowerTitle: "Lower Bound",
-                    upperTitle: "Upper Bound",
-                    lowerBinding: intRangeLowerBinding,
-                    upperBinding: intRangeUpperBinding
-                )
+                HStack(spacing: 8) {
+                    Picker("Lower", selection: intRangeLowerBinding) {
+                        ForEach(RangeBoundInclusion.allCases) { mode in
+                            Text(mode.title).tag(mode)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
+                    Picker("Upper", selection: intRangeUpperBinding) {
+                        ForEach(RangeBoundInclusion.allCases) { mode in
+                            Text(mode.title).tag(mode)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
             } else {
                 TextField("Value", value: intValueBinding, format: .number)
                     .textFieldStyle(.roundedBorder)
@@ -355,12 +356,21 @@ private struct VariableRuleEditorRow: View {
                 DatePicker("From", selection: dateRangeMinBinding, displayedComponents: [.date])
                 DatePicker("To", selection: dateRangeMaxBinding, displayedComponents: [.date])
 
-                rangeInclusionEditor(
-                    lowerTitle: "Lower Bound",
-                    upperTitle: "Upper Bound",
-                    lowerBinding: dateRangeLowerBinding,
-                    upperBinding: dateRangeUpperBinding
-                )
+                HStack(spacing: 8) {
+                    Picker("Lower", selection: dateRangeLowerBinding) {
+                        ForEach(RangeBoundInclusion.allCases) { mode in
+                            Text(mode.title).tag(mode)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
+                    Picker("Upper", selection: dateRangeUpperBinding) {
+                        ForEach(RangeBoundInclusion.allCases) { mode in
+                            Text(mode.title).tag(mode)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
             } else {
                 DatePicker("Date", selection: dateValueBinding, displayedComponents: [.date])
             }
@@ -639,64 +649,6 @@ private struct VariableRuleEditorRow: View {
 
         if !isValueCompatible(variableType: variable.type, op: rule.operator, value: rule.value) {
             rule.value = defaultValue(for: variable, op: rule.operator)
-        }
-    }
-
-    @ViewBuilder
-    private func rangeInclusionEditor(
-        lowerTitle: String,
-        upperTitle: String,
-        lowerBinding: Binding<RangeBoundInclusion>,
-        upperBinding: Binding<RangeBoundInclusion>
-    ) -> some View {
-        if horizontalSizeClass == .regular {
-            HStack(spacing: 8) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(lowerTitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Picker(lowerTitle, selection: lowerBinding) {
-                        ForEach(RangeBoundInclusion.allCases) { mode in
-                            Text(mode.title).tag(mode)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                }
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(upperTitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Picker(upperTitle, selection: upperBinding) {
-                        ForEach(RangeBoundInclusion.allCases) { mode in
-                            Text(mode.title).tag(mode)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                }
-            }
-        } else {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(lowerTitle)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Picker(lowerTitle, selection: lowerBinding) {
-                    ForEach(RangeBoundInclusion.allCases) { mode in
-                        Text(mode.title).tag(mode)
-                    }
-                }
-                .pickerStyle(.segmented)
-
-                Text(upperTitle)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Picker(upperTitle, selection: upperBinding) {
-                    ForEach(RangeBoundInclusion.allCases) { mode in
-                        Text(mode.title).tag(mode)
-                    }
-                }
-                .pickerStyle(.segmented)
-            }
         }
     }
 

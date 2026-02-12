@@ -22,7 +22,6 @@ struct ComposedPDFPageEntry: Identifiable {
 
 struct ContinuousPDFViewerRepresentable: UIViewRepresentable {
     let entries: [ComposedPDFPageEntry]
-    let preferredInitialComposedPageIndex: Int?
     let jumpToComposedPageIndex: Int?
     let jumpRequestID: Int
 
@@ -238,18 +237,9 @@ struct ContinuousPDFViewerRepresentable: UIViewRepresentable {
             var restoredComposedIndex: Int?
             if let previousViewport {
                 restoredComposedIndex = restoreViewportState(previousViewport, on: pdfView)
-            } else if composedIndex > 0 {
-                let preferredIndex = resolvedPreferredInitialComposedIndex(
-                    pageCount: composedIndex
-                )
-                if let preferredIndex,
-                   let preferredPage = document.page(at: preferredIndex) {
-                    pdfView.go(to: preferredPage)
-                    restoredComposedIndex = preferredIndex
-                } else if let firstPage = document.page(at: 0) {
-                    pdfView.go(to: firstPage)
-                    restoredComposedIndex = 0
-                }
+            } else if composedIndex > 0, let firstPage = document.page(at: 0) {
+                pdfView.go(to: firstPage)
+                restoredComposedIndex = 0
             }
 
             if let restoredComposedIndex {
@@ -402,24 +392,6 @@ struct ContinuousPDFViewerRepresentable: UIViewRepresentable {
                composedPageIndex >= 0,
                composedPageIndex < pageCount {
                 return composedPageIndex
-            }
-
-            return nil
-        }
-
-        private func resolvedPreferredInitialComposedIndex(pageCount: Int) -> Int? {
-            guard pageCount > 0 else { return nil }
-
-            if let requestedJump = parent.jumpToComposedPageIndex,
-               requestedJump >= 0,
-               requestedJump < pageCount {
-                return requestedJump
-            }
-
-            if let preferredInitial = parent.preferredInitialComposedPageIndex,
-               preferredInitial >= 0,
-               preferredInitial < pageCount {
-                return preferredInitial
             }
 
             return nil
