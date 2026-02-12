@@ -444,6 +444,8 @@ struct UniversalDocViewer: View {
                 } label: {
                     Text("Group \(currentGroupNumber) / \(groupCount)")
                         .font(.headline)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
                         .background(Color(.systemBackground))
@@ -463,49 +465,27 @@ struct UniversalDocViewer: View {
                 }
                 .disabled(currentGroupNumber >= groupCount)
 
+                Spacer()
+
                 Text("Page \(currentPageNumber) / \(pageCount)")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                    .padding(.leading, 4)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
 
                 Spacer()
 
-                versionMenu
-                sourceMenu
-                inlineNotesToggle
-                notesModeToggle
+                topActionsMenu
+            }
 
-                Menu {
-                    Picker("Apply", selection: $sourceApplyScope) {
-                        ForEach(SourceApplyScope.allCases) { scope in
-                            Text(scope.title).tag(scope)
-                        }
-                    }
-
-                    Divider()
-
-                    Button {
-                        showingCreateVersionSheet = true
-                    } label: {
-                        Label("New Version", systemImage: "plus.circle")
-                    }
-                    .disabled(!canCreateVersion)
-
-                    Button {
-                        if canEditNotes {
-                            isNoteCreateMode.toggle()
-                        }
-                    } label: {
-                        Label(
-                            isNoteCreateMode ? "Exit Add Note" : "Add Note",
-                            systemImage: isNoteCreateMode ? "xmark.circle" : "pencil.tip.crop.circle.badge.plus"
-                        )
-                    }
-                    .disabled(!canEditNotes)
-                } label: {
-                    Image(systemName: "ellipsis.circle")
-                        .font(.title3)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    versionMenu
+                    sourceMenu
+                    inlineNotesToggle
+                    notesModeToggle
                 }
+                .padding(.vertical, 1)
             }
 
             Text(focusedPageGroupName)
@@ -516,6 +496,40 @@ struct UniversalDocViewer: View {
         .padding(.horizontal)
         .padding(.vertical, 10)
         .background(.ultraThinMaterial)
+    }
+
+    private var topActionsMenu: some View {
+        Menu {
+            Picker("Apply", selection: $sourceApplyScope) {
+                ForEach(SourceApplyScope.allCases) { scope in
+                    Text(scope.title).tag(scope)
+                }
+            }
+
+            Divider()
+
+            Button {
+                showingCreateVersionSheet = true
+            } label: {
+                Label("New Version", systemImage: "plus.circle")
+            }
+            .disabled(!canCreateVersion)
+
+            Button {
+                if canEditNotes {
+                    isNoteCreateMode.toggle()
+                }
+            } label: {
+                Label(
+                    isNoteCreateMode ? "Exit Add Note" : "Add Note",
+                    systemImage: isNoteCreateMode ? "xmark.circle" : "pencil.tip.crop.circle.badge.plus"
+                )
+            }
+            .disabled(!canEditNotes)
+        } label: {
+            Image(systemName: "ellipsis.circle")
+                .font(.title3)
+        }
     }
 
     private var inlineNotesToggle: some View {
@@ -539,6 +553,7 @@ struct UniversalDocViewer: View {
         .buttonStyle(.plain)
         .disabled(isOCRMode)
         .opacity(isOCRMode ? 0.5 : 1)
+        .fixedSize(horizontal: true, vertical: false)
     }
 
     private var notesModeToggle: some View {
@@ -565,6 +580,7 @@ struct UniversalDocViewer: View {
         .buttonStyle(.plain)
         .disabled(isOCRMode)
         .opacity(isOCRMode ? 0.5 : 1)
+        .fixedSize(horizontal: true, vertical: false)
     }
 
     private var versionMenu: some View {
@@ -600,6 +616,7 @@ struct UniversalDocViewer: View {
             .overlay(
                 Capsule().stroke(Color.secondary.opacity(0.3), lineWidth: 1)
             )
+            .fixedSize(horizontal: true, vertical: false)
         }
     }
 
@@ -638,6 +655,7 @@ struct UniversalDocViewer: View {
             .overlay(
                 Capsule().stroke(Color.secondary.opacity(0.3), lineWidth: 1)
             )
+            .fixedSize(horizontal: true, vertical: false)
         }
     }
 
@@ -653,6 +671,7 @@ struct UniversalDocViewer: View {
     private var pdfReader: some View {
         ContinuousPDFViewerRepresentable(
             entries: composedPDFEntries,
+            preferredInitialComposedPageIndex: focusedComposedIndex,
             jumpToComposedPageIndex: pendingJumpComposedIndex,
             jumpRequestID: jumpRequestID,
             noteAnchors: noteAnchors,
