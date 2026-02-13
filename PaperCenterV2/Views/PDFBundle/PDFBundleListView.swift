@@ -5,7 +5,6 @@
 
 import SwiftUI
 import SwiftData
-import UniformTypeIdentifiers
 
 struct PDFBundleListView: View {
     @Environment(\.modelContext) private var modelContext
@@ -14,23 +13,13 @@ struct PDFBundleListView: View {
     @State private var viewModel: PDFBundleListViewModel?
     @State private var showingImport = false
     @State private var selectedBundleForDoc: PDFBundle?
-
-    @State private var bundleToAddPDF: PDFBundle?
-    @State private var activeAddPDFType: PDFType?
-    @State private var isFileImporterPresented = false
+    @State private var bundleToCompletePDFs: PDFBundle?
 
     var body: some View {
         NavigationStack {
             List {
                 ForEach(bundles) { bundle in
-                    let info = viewModel?.formatBundleInfo(bundle) ?? BundleDisplayInfo(
-                        hasDisplay: false,
-                        hasOCR: false,
-                        hasOriginal: false,
-                        pageCount: 0,
-                        referenceCount: 0,
-                        createdAt: Date()
-                    )
+                    let info = viewModel?.formatBundleInfo(bundle) ?? .placeholder
 
                     PDFBundleRowView(bundle: bundle, info: info)
                         .contextMenu {
@@ -39,11 +28,16 @@ struct PDFBundleListView: View {
                             } label: {
                                 Label("Create Doc", systemImage: "doc.badge.plus")
                             }
+                            .disabled(!info.hasDisplay)
 
                             Button {
-                                bundleToAddPDF = bundle
+                                bundleToCompletePDFs = bundle
                             } label: {
-                                Label("Add PDFs", systemImage: "plus.circle")
+                                if info.isComplete {
+                                    Label("Review PDF Variants", systemImage: "doc.text.magnifyingglass")
+                                } else {
+                                    Label("Complete Missing PDFs", systemImage: "plus.circle")
+                                }
                             }
 
                             Divider()
@@ -73,48 +67,15 @@ struct PDFBundleListView: View {
             .sheet(item: $selectedBundleForDoc) { bundle in
                 DocCreationView(bundle: bundle)
             }
-            .confirmationDialog(
-                "Add PDF Variant",
-                isPresented: Binding(
-                    get: { bundleToAddPDF != nil && !isFileImporterPresented },
-                    set: { if !$0 { bundleToAddPDF = nil } }
-                ),
-                presenting: bundleToAddPDF
-            ) { bundle in
-                if bundle.displayPDFPath == nil {
-                    Button("Display PDF") {
-                        activeAddPDFType = .display
-                        isFileImporterPresented = true
-                    }
-                }
-                if bundle.ocrPDFPath == nil {
-                    Button("OCR PDF") {
-                        activeAddPDFType = .ocr
-                        isFileImporterPresented = true
-                    }
-                }
-                if bundle.originalPDFPath == nil {
-                    Button("Original PDF") {
-                        activeAddPDFType = .original
-                        isFileImporterPresented = true
-                    }
-                }
-            } message: { _ in
-                Text("Select the type of PDF to add to this bundle")
-            }
-            .fileImporter(
-                isPresented: $isFileImporterPresented,
-                allowedContentTypes: [.pdf],
-                allowsMultipleSelection: false
-            ) { result in
-                guard let type = activeAddPDFType, let bundle = bundleToAddPDF else { return }
-                activeAddPDFType = nil
-                bundleToAddPDF = nil
-
-                if case .success(let urls) = result, let url = urls.first {
-                    Task {
-                        try? await viewModel?.addPDF(from: url, type: type, to: bundle)
-                    }
+            .sheet(item: $bundleToCompletePDFs) { bundle in
+                if let viewModel {
+                    BundlePDFCompletionView(
+                        bundle: bundle,
+                        viewModel: viewModel
+                    )
+                } else {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
             .onAppear {

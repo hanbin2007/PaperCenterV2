@@ -157,7 +157,15 @@ struct DocCreationView: View {
     }
 
     private var canCreate: Bool {
-        !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && selectedBundle != nil
+        !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && selectedBundleHasDisplayPDF
+    }
+
+    private var selectedBundleHasDisplayPDF: Bool {
+        guard let bundle = selectedBundle,
+              let displayURL = bundle.fileURL(for: .display) else {
+            return false
+        }
+        return FileManager.default.fileExists(atPath: displayURL.path)
     }
 
     private func createDocument() {
@@ -167,6 +175,11 @@ struct DocCreationView: View {
                 promptForBundleCreationIfNeeded(force: true)
             }
             errorMessage = "Missing required information"
+            return
+        }
+
+        guard selectedBundleHasDisplayPDF else {
+            errorMessage = "Selected bundle is missing a readable Display PDF. Complete the bundle first."
             return
         }
 
@@ -195,16 +208,26 @@ private struct BundlePickerRow: View {
     let bundle: PDFBundle
 
     var body: some View {
+        let hasDisplayFile = bundle.fileURL(for: .display).map {
+            FileManager.default.fileExists(atPath: $0.path)
+        } ?? false
+
         VStack(alignment: .leading, spacing: 2) {
             Text(bundle.displayName)
                 .font(.body)
 
             HStack(spacing: 4) {
-                if bundle.displayPDFPath != nil {
+                if hasDisplayFile {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.caption2)
                         .foregroundColor(.green)
                     Text("Has Display PDF")
+                        .font(.caption2)
+                } else {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.caption2)
+                        .foregroundStyle(.orange)
+                    Text("Display PDF Missing")
                         .font(.caption2)
                 }
                 Text("• Created: \(bundle.createdAt, format: .dateTime.month().day())")

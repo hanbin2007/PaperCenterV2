@@ -168,9 +168,13 @@ final class PDFImportService {
         // Copy file to sandbox
         let targetURL = bundleDir.appendingPathComponent(targetFilename)
 
-        // Never replace an existing variant on an existing bundle.
+        // Never replace an existing variant on an existing bundle while the file still exists.
         // Replacing files would invalidate historical Page/PageVersion references.
-        if bundle != nil, targetBundle.path(for: type) != nil {
+        // If the recorded path exists but the file is missing, allow restoring that variant.
+        if bundle != nil,
+           targetBundle.path(for: type) != nil,
+           let existingURL = targetBundle.fileURL(for: type),
+           fileManager.fileExists(atPath: existingURL.path) {
             throw PDFImportError.bundleVariantAlreadyExists
         }
 

@@ -176,9 +176,11 @@ final class UniversalDocSessionBuilder {
         guard let bundle = fetchBundle(id: version.pdfBundleID) else {
             return .display
         }
-        if bundle.displayPDFPath != nil { return .display }
-        if bundle.originalPDFPath != nil { return .original }
-        return .ocr
+        if hasReadablePDF(in: bundle, type: .display) { return .display }
+        if hasReadablePDF(in: bundle, type: .original) { return .original }
+        if hasReadablePDF(in: bundle, type: .ocr) { return .ocr }
+        if bundle.ocrTextByPage[version.pageNumber]?.isEmpty == false { return .ocr }
+        return .display
     }
 
     private func fetchBundle(id: UUID) -> PDFBundle? {
@@ -202,5 +204,12 @@ final class UniversalDocSessionBuilder {
 
         bundleCache[id] = fetched
         return fetched
+    }
+
+    private func hasReadablePDF(in bundle: PDFBundle, type: PDFType) -> Bool {
+        guard let url = bundle.fileURL(for: type) else {
+            return false
+        }
+        return FileManager.default.fileExists(atPath: url.path)
     }
 }

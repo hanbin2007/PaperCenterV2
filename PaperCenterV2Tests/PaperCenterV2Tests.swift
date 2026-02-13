@@ -28,6 +28,7 @@ final class PaperCenterV2Tests: XCTestCase {
         XCTAssertEqual(firstVersion.pageNumber, 3)
     }
 
+    @MainActor
     func testUpdateReferenceDoesNotCreateVersionWhenUnchanged() {
         let bundle = PDFBundle(name: "Bundle A")
         let page = Page(pdfBundle: bundle, pageNumber: 1)
@@ -39,6 +40,7 @@ final class PaperCenterV2Tests: XCTestCase {
         XCTAssertEqual(page.versions?.count, initialCount)
     }
 
+    @MainActor
     func testUpdateReferenceCreatesVersionWhenBundleChanges() throws {
         let bundleA = PDFBundle(name: "Bundle A")
         let bundleB = PDFBundle(name: "Bundle B")
@@ -56,6 +58,7 @@ final class PaperCenterV2Tests: XCTestCase {
         XCTAssertEqual(latest.pageNumber, 2)
     }
 
+    @MainActor
     func testUpdateReferenceCreatesVersionWhenPageNumberChanges() throws {
         let bundle = PDFBundle(name: "Bundle A")
         let page = Page(pdfBundle: bundle, pageNumber: 2)
@@ -181,22 +184,70 @@ final class PaperCenterV2Tests: XCTestCase {
         let container = try makeInMemoryContainer()
         let context = ModelContext(container)
         let service = PDFImportService(modelContext: context)
+        let fileManager = FileManager.default
 
         let bundle = PDFBundle(name: "Protected Bundle")
         context.insert(bundle)
-        bundle.setPath("PDFBundles/\(bundle.id.uuidString)/display.pdf", for: .display)
+        let existingSourceURL = try makeTemporaryPDF()
+        let replacementURL = try makeTemporaryPDF()
+        defer {
+            try? fileManager.removeItem(at: existingSourceURL)
+            try? fileManager.removeItem(at: replacementURL)
+            let bundleDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                .appendingPathComponent("PDFBundles")
+                .appendingPathComponent(bundle.id.uuidString)
+            try? fileManager.removeItem(at: bundleDirectory)
+        }
+        let relativePath = "PDFBundles/\(bundle.id.uuidString)/display.pdf"
+        bundle.setPath(relativePath, for: .display)
 
-        let sourceURL = try makeTemporaryPDF()
-        defer { try? FileManager.default.removeItem(at: sourceURL) }
+        let targetURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent(relativePath)
+        try fileManager.createDirectory(
+            at: targetURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        try fileManager.copyItem(at: existingSourceURL, to: targetURL)
 
         do {
-            _ = try await service.importPDF(from: sourceURL, type: .display, into: bundle)
+            _ = try await service.importPDF(from: replacementURL, type: .display, into: bundle)
             XCTFail("Expected replacement guard to throw")
         } catch PDFImportError.bundleVariantAlreadyExists {
             // Expected
         } catch {
             XCTFail("Expected bundleVariantAlreadyExists, got \(error)")
         }
+    }
+
+    @MainActor
+    func testImportPDFRestoresVariantWhenPathExistsButFileMissing() async throws {
+        let container = try makeInMemoryContainer()
+        let context = ModelContext(container)
+        let service = PDFImportService(modelContext: context)
+        let fileManager = FileManager.default
+
+        let bundle = PDFBundle(name: "Recoverable Bundle")
+        context.insert(bundle)
+
+        let relativePath = "PDFBundles/\(bundle.id.uuidString)/display.pdf"
+        bundle.setPath(relativePath, for: .display)
+
+        let sourceURL = try makeTemporaryPDF()
+        defer {
+            try? fileManager.removeItem(at: sourceURL)
+            let bundleDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                .appendingPathComponent("PDFBundles")
+                .appendingPathComponent(bundle.id.uuidString)
+            try? fileManager.removeItem(at: bundleDirectory)
+        }
+
+        let restored = try await service.importPDF(from: sourceURL, type: .display, into: bundle)
+        let targetURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent(relativePath)
+
+        XCTAssertEqual(restored.id, bundle.id)
+        XCTAssertEqual(bundle.displayPDFPath, relativePath)
+        XCTAssertTrue(fileManager.fileExists(atPath: targetURL.path))
     }
 
     @MainActor
@@ -247,6 +298,45 @@ final class PaperCenterV2Tests: XCTestCase {
         let slot = try XCTUnwrap(session.slots.first)
 
         XCTAssertEqual(slot.defaultVersionID, page.latestVersion?.id)
+    }
+
+    @MainActor
+    func testSessionBuilderDefaultSourceSkipsMissingDisplayFile() async throws {
+        let shouldSkip = ProcessInfo.processInfo.environment["SKIP_UNIVERSALDOC_TESTS"] != "0"
+        if shouldSkip {
+            throw XCTSkip("Skipped on Designed-for-iPad runtime due unstable XCTest host crashes.")
+        }
+
+        let container = try makeInMemoryContainer()
+        let context = ModelContext(container)
+        let importService = PDFImportService(modelContext: context)
+
+        let bundle = PDFBundle(name: "Fallback Source Bundle")
+        context.insert(bundle)
+        bundle.setPath("PDFBundles/\(bundle.id.uuidString)/display.pdf", for: .display)
+
+        let originalURL = try makeTemporaryPDF()
+        defer {
+            try? FileManager.default.removeItem(at: originalURL)
+            let bundleDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                .appendingPathComponent("PDFBundles")
+                .appendingPathComponent(bundle.id.uuidString)
+            try? FileManager.default.removeItem(at: bundleDirectory)
+        }
+        _ = try await importService.importPDF(from: originalURL, type: .original, into: bundle)
+        try context.save()
+
+        let doc = Doc(title: "Doc")
+        let group = PageGroup(title: "Group", doc: doc)
+        doc.addPageGroup(group)
+        let page = Page(pdfBundle: bundle, pageNumber: 1, pageGroup: group)
+        group.addPage(page)
+
+        let builder = UniversalDocSessionBuilder(modelContext: context)
+        let session = builder.buildSession(for: doc)
+        let slot = try XCTUnwrap(session.slots.first)
+
+        XCTAssertEqual(slot.defaultSource, .original)
     }
 
     @MainActor

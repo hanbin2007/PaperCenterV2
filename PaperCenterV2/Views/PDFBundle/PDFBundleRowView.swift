@@ -22,9 +22,15 @@ struct PDFBundleRowView: View {
                     .font(.headline)
 
                 HStack(spacing: 8) {
-                    PDFIndicator(type: "Display", available: info.hasDisplay)
-                    PDFIndicator(type: "OCR", available: info.hasOCR)
-                    PDFIndicator(type: "Original", available: info.hasOriginal)
+                    PDFIndicator(variant: info.displayVariant)
+                    PDFIndicator(variant: info.ocrVariant)
+                    PDFIndicator(variant: info.originalVariant)
+                }
+
+                if !info.isComplete {
+                    Label(missingSummary, systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
                 }
 
                 HStack {
@@ -101,27 +107,83 @@ struct PDFBundleRowView: View {
             print("Thumbnail error for bundle \(bundle.id): \(error)")
         }
     }
+
+    private var missingSummary: String {
+        let fileMissingCount = info.missingVariants.filter { $0.status == .fileMissing }.count
+        if fileMissingCount > 0 {
+            if info.missingCount == 1 {
+                return "1 variant file is missing"
+            }
+            return "\(info.missingCount) variants missing (\(fileMissingCount) file issues)"
+        }
+
+        if info.missingCount == 1 {
+            return "1 variant not added yet"
+        }
+        return "\(info.missingCount) variants not added yet"
+    }
 }
 
 /// Indicator showing if a PDF type is available
 private struct PDFIndicator: View {
-    let type: String
-    let available: Bool
+    let variant: BundleVariantInfo
 
     var body: some View {
         HStack(spacing: 2) {
-            Image(systemName: available ? "checkmark.circle.fill" : "circle")
+            Image(systemName: iconName)
                 .font(.caption2)
-                .foregroundColor(available ? .green : .secondary)
+                .foregroundStyle(iconColor)
 
-            Text(type)
+            Text(variant.type.shortTitle)
                 .font(.caption2)
-                .foregroundStyle(available ? .primary : .secondary)
+                .foregroundStyle(textColor)
         }
         .padding(.horizontal, 6)
         .padding(.vertical, 3)
-        .background(available ? Color.green.opacity(0.1) : Color.secondary.opacity(0.05))
+        .background(backgroundColor)
         .clipShape(Capsule())
+    }
+
+    private var iconName: String {
+        switch variant.status {
+        case .available:
+            return "checkmark.circle.fill"
+        case .missing:
+            return "circle"
+        case .fileMissing:
+            return "exclamationmark.triangle.fill"
+        }
+    }
+
+    private var iconColor: Color {
+        switch variant.status {
+        case .available:
+            return .green
+        case .missing:
+            return .secondary
+        case .fileMissing:
+            return .orange
+        }
+    }
+
+    private var textColor: Color {
+        switch variant.status {
+        case .available:
+            return .primary
+        case .missing, .fileMissing:
+            return .secondary
+        }
+    }
+
+    private var backgroundColor: Color {
+        switch variant.status {
+        case .available:
+            return Color.green.opacity(0.1)
+        case .missing:
+            return Color.secondary.opacity(0.05)
+        case .fileMissing:
+            return Color.orange.opacity(0.12)
+        }
     }
 }
 
