@@ -1,130 +1,28 @@
-//
-//  PDFBundleImportView.swift
-//  PaperCenterV2
-//
-//  Created by Claude on 2025-11-09.
-//
-
 import SwiftUI
 import SwiftData
 import UniformTypeIdentifiers
 
-/// View for importing PDF bundles
 struct PDFBundleImportView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
 
-    @State private var viewModel: PDFImportViewModel
-
+    @State private var viewModel: PDFImportViewModel?
     @State private var activePickerType: PDFType?
     @State private var isFileImporterPresented = false
-    @State private var hasInitializedViewModel = false
-
     @Bindable var ocrSettings = OCRSettings.shared
-
-    init() {
-        // Will be properly initialized in onAppear with modelContext
-        _viewModel = State(initialValue: PDFImportViewModel(modelContext: ModelContext(ModelContainer.preview)))
-    }
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
-                    TextField("Bundle Name", text: $viewModel.bundleName)
-                } header: {
-                    Text("Bundle Information")
-                } footer: {
-                    Text("Enter a descriptive name for this PDF bundle")
-                }
-
-                Section {
-                    // Display PDF (required)
-                    PDFPickerRow(
-                        title: "Display PDF",
-                        subtitle: "Required",
-                        url: $viewModel.displayPDFURL
-                    ) {
-                        presentPicker(.display)
-                    }
-
-                    // OCR PDF (optional)
-                    PDFPickerRow(
-                        title: "OCR PDF",
-                        subtitle: "Optional - for text extraction",
-                        url: $viewModel.ocrPDFURL
-                    ) {
-                        presentPicker(.ocr)
-                    }
-
-                    // Original PDF (optional)
-                    PDFPickerRow(
-                        title: "Original PDF",
-                        subtitle: "Optional - original without annotations",
-                        url: $viewModel.originalPDFURL
-                    ) {
-                        presentPicker(.original)
-                    }
-                } header: {
-                    Text("Select PDF Files")
-                } footer: {
-                    Text("Display PDF is required. OCR and Original PDFs are optional.")
-                }
-
-                if !viewModel.pagePreviews.isEmpty {
-                    Section {
-                        NavigationLink {
-                            PageSelectionView(viewModel: viewModel)
-                        } label: {
-                            PageSelectionSummary(viewModel: viewModel)
-                        }
-                    } header: {
-                        Text("Page Selection")
-                    } footer: {
-                        Text("Tap to review thumbnails and choose which pages to import.")
-                            .font(.caption)
-                    }
-                }
-
-                // OCR Settings Section (only show if OCR PDF is selected)
-                if viewModel.ocrPDFURL != nil {
-                    Section {
-                        Toggle(isOn: $ocrSettings.isVisionOCREnabled) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Vision Framework OCR")
-                                    .font(.body)
-                                Text("Extract text from scanned images")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-
-                        Picker("Language", selection: $ocrSettings.ocrLanguage) {
-                            ForEach(OCRLanguage.allCases) { language in
-                                Text(language.displayName).tag(language)
-                            }
-                        }
-                        .disabled(!ocrSettings.isVisionOCREnabled)
-                    } header: {
-                        Text("OCR Settings")
-                    } footer: {
-                        VStack(alignment: .leading, spacing: 8) {
-                            if ocrSettings.isVisionOCREnabled {
-                                Text("Vision OCR will extract text from image-based PDFs in the selected language.")
-                            } else {
-                                Text("Only embedded text will be extracted (faster, but won't work for scanned documents).")
-                            }
-                        }
-                        .font(.caption)
-                    }
-                }
-
-                if let error = viewModel.errorMessage {
-                    Section {
-                        Text(error)
-                            .foregroundStyle(.red)
-                            .font(.caption)
-                    }
+            Group {
+                if let vm = viewModel {
+                    PDFBundleImportForm(
+                        viewModel: vm,
+                        activePickerType: $activePickerType,
+                        isFileImporterPresented: $isFileImporterPresented
+                    )
+                } else {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
             .navigationTitle("Import PDF Bundle")
@@ -139,13 +37,12 @@ struct PDFBundleImportView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Import") {
                         Task {
-                            let didImport = await viewModel.importBundle()
-                            if didImport {
+                            if let didImport = await viewModel?.importBundle(), didImport {
                                 dismiss()
                             }
                         }
                     }
-                    .disabled(!viewModel.canImport)
+                    .disabled(!(viewModel?.canImport ?? false))
                 }
             }
             .fileImporter(
@@ -153,15 +50,130 @@ struct PDFBundleImportView: View {
                 allowedContentTypes: [.pdf],
                 allowsMultipleSelection: false
             ) { result in
-                guard let pickerType = activePickerType else { return }
-                defer { activePickerType = nil }
-                handleFileSelection(result, for: pickerType)
+                guard let pickerType = activePickerType, let vm = viewModel else { return }
+                activePickerType = nil
+
+                if case .success(let urls) = result, let url = urls.first {
+                    switch pickerType {
+                    case .display:
+                        vm.displayPDFURL = url
+                    case .ocr:
+                        vm.ocrPDFURL = url
+                    case .original:
+                        vm.originalPDFURL = url
+                    }
+                } else if case .failure(let error) = result {
+                    vm.errorMessage = error.localizedDescription
+                }
             }
             .onAppear {
-                // Only initialize once; reinitializing on every appear clears user-selected files/pages.
-                guard !hasInitializedViewModel else { return }
-                viewModel = PDFImportViewModel(modelContext: modelContext)
-                hasInitializedViewModel = true
+                if viewModel == nil {
+                    viewModel = PDFImportViewModel(modelContext: modelContext)
+                }
+            }
+        }
+    }
+}
+
+private struct PDFBundleImportForm: View {
+    @Bindable var viewModel: PDFImportViewModel
+    @Binding var activePickerType: PDFType?
+    @Binding var isFileImporterPresented: Bool
+    @Bindable var ocrSettings = OCRSettings.shared
+
+    var body: some View {
+        Form {
+            Section {
+                TextField("Bundle Name", text: $viewModel.bundleName)
+            } header: {
+                Text("Bundle Information")
+            } footer: {
+                Text("Enter a descriptive name for this PDF bundle")
+            }
+
+            Section {
+                PDFPickerRow(
+                    title: "Display PDF",
+                    subtitle: "Required",
+                    url: $viewModel.displayPDFURL
+                ) {
+                    presentPicker(.display)
+                }
+
+                PDFPickerRow(
+                    title: "OCR PDF",
+                    subtitle: "Optional - for text extraction",
+                    url: $viewModel.ocrPDFURL
+                ) {
+                    presentPicker(.ocr)
+                }
+
+                PDFPickerRow(
+                    title: "Original PDF",
+                    subtitle: "Optional - original without annotations",
+                    url: $viewModel.originalPDFURL
+                ) {
+                    presentPicker(.original)
+                }
+            } header: {
+                Text("Select PDF Files")
+            } footer: {
+                Text("Display PDF is required. OCR and Original PDFs are optional.")
+            }
+
+            if !viewModel.pagePreviews.isEmpty {
+                Section {
+                    NavigationLink {
+                        PageSelectionView(viewModel: viewModel)
+                    } label: {
+                        PageSelectionSummary(viewModel: viewModel)
+                    }
+                } header: {
+                    Text("Page Selection")
+                } footer: {
+                    Text("Tap to review thumbnails and choose which pages to import.")
+                        .font(.caption)
+                }
+            }
+
+            if viewModel.ocrPDFURL != nil {
+                Section {
+                    Toggle(isOn: $ocrSettings.isVisionOCREnabled) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Vision Framework OCR")
+                                .font(.body)
+                            Text("Extract text from scanned images")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+
+                    Picker("Language", selection: $ocrSettings.ocrLanguage) {
+                        ForEach(OCRLanguage.allCases) { language in
+                            Text(language.displayName).tag(language)
+                        }
+                    }
+                    .disabled(!ocrSettings.isVisionOCREnabled)
+                } header: {
+                    Text("OCR Settings")
+                } footer: {
+                    VStack(alignment: .leading, spacing: 8) {
+                        if ocrSettings.isVisionOCREnabled {
+                            Text("Vision OCR will extract text from image-based PDFs in the selected language.")
+                        } else {
+                            Text("Only embedded text will be extracted (faster, but won't work for scanned documents).")
+                        }
+                    }
+                    .font(.caption)
+                }
+            }
+
+            if let error = viewModel.errorMessage {
+                Section {
+                    Text(error)
+                        .foregroundStyle(.red)
+                        .font(.caption)
+                }
             }
         }
     }
@@ -169,27 +181,6 @@ struct PDFBundleImportView: View {
     private func presentPicker(_ type: PDFType) {
         activePickerType = type
         isFileImporterPresented = true
-    }
-
-    private func handleFileSelection(_ result: Result<[URL], Error>, for type: PDFType) {
-        switch result {
-        case .success(let urls):
-            guard let url = urls.first else { return }
-            assignSelectedURL(url, for: type)
-        case .failure(let error):
-            viewModel.errorMessage = error.localizedDescription
-        }
-    }
-
-    private func assignSelectedURL(_ url: URL, for type: PDFType) {
-        switch type {
-        case .display:
-            viewModel.displayPDFURL = url
-        case .ocr:
-            viewModel.ocrPDFURL = url
-        case .original:
-            viewModel.originalPDFURL = url
-        }
     }
 }
 
@@ -409,8 +400,7 @@ private struct PagePreviewDetailView: View {
     }
 }
 
-/// Row for picking a PDF file
-private struct PDFPickerRow: View {
+struct PDFPickerRow: View {
     let title: String
     let subtitle: String
     @Binding var url: URL?
@@ -430,16 +420,14 @@ private struct PDFPickerRow: View {
 
                 Spacer()
 
-                Button {
-                    action()
-                } label: {
+                Button(action: action) {
                     Text(url == nil ? "Select" : "Change")
                         .font(.caption)
                 }
                 .buttonStyle(.bordered)
             }
 
-            if let url = url {
+            if let url {
                 Text(url.lastPathComponent)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -447,30 +435,5 @@ private struct PDFPickerRow: View {
                     .truncationMode(.middle)
             }
         }
-    }
-}
-
-// MARK: - Preview Helper
-
-extension ModelContainer {
-    static var preview: ModelContainer {
-        let schema = Schema([
-            PDFBundle.self,
-            Doc.self,
-            PageGroup.self,
-            Page.self,
-            PageVersion.self,
-            NoteBlock.self,
-            Tag.self,
-            TagGroup.self,
-            Variable.self,
-            PDFBundleVariableAssignment.self,
-            DocVariableAssignment.self,
-            PageGroupVariableAssignment.self,
-            PageVariableAssignment.self,
-            NoteBlockVariableAssignment.self
-        ])
-        let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try! ModelContainer(for: schema, configurations: configuration)
     }
 }

@@ -3,7 +3,6 @@
 //  PaperCenterV2
 //
 //  Reusable UniversalDoc viewer with continuous PDF scrolling and note anchors.
-//
 
 import PDFKit
 import SwiftData
@@ -12,9 +11,7 @@ import SwiftUI
 private enum SourceApplyScope: String, CaseIterable, Identifiable {
     case focused
     case global
-
     var id: String { rawValue }
-
     var title: String {
         switch self {
         case .focused:
@@ -28,9 +25,7 @@ private enum SourceApplyScope: String, CaseIterable, Identifiable {
 private enum NoteInteractionMode: String, CaseIterable, Identifiable {
     case view
     case edit
-
     var id: String { rawValue }
-
     var title: String {
         switch self {
         case .view:
@@ -39,7 +34,6 @@ private enum NoteInteractionMode: String, CaseIterable, Identifiable {
             return "Edit"
         }
     }
-
     var iconName: String {
         switch self {
         case .view:
@@ -68,7 +62,7 @@ private struct ViewerGroupEntry: Identifiable {
     let pageGroupTitle: String
     let groupOrderKey: Int
     let entries: [ViewerLogicalEntry]
-
+    
     var firstLogicalPageID: UUID? {
         entries.first?.id
     }
@@ -77,12 +71,12 @@ private struct ViewerGroupEntry: Identifiable {
 struct UniversalDocViewer: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-
     @Bindable var store: UniversalDocSessionStore
     let dataProvider: UniversalDocDataProvider
     let initialSelectedNoteID: UUID?
+    
     let onPageVersionCreated: (_ logicalPageID: UUID, _ pageVersionID: UUID) -> Void
-
+    
     init(
         store: UniversalDocSessionStore,
         dataProvider: UniversalDocDataProvider,
@@ -95,38 +89,41 @@ struct UniversalDocViewer: View {
         self.onPageVersionCreated = onPageVersionCreated
         _pendingInitialNoteID = State(initialValue: initialSelectedNoteID)
     }
-
+    
     @State private var sourceApplyScope: SourceApplyScope = .focused
     @State private var showingCreateVersionSheet = false
     @State private var showingGroupJumpSheet = false
-
+    
     @State private var pendingJumpComposedIndex: Int?
     @State private var jumpRequestID = 0
+    
     @State private var isNoteCreateMode = false
     @State private var notesDrawerExpanded = true
     @State private var notesPanelCollapsed = false
     @State private var showsInlineNoteBubbles = true
     @State private var noteInteractionMode: NoteInteractionMode = .view
+    
     @State private var loadedNotesSignature = ""
     @State private var pendingInitialNoteID: UUID?
     @State private var noteFocusRequestID = 0
-
+    
     @State private var notesViewModel: DocNotesEditorViewModel?
-
+    
     private var logicalEntries: [ViewerLogicalEntry] {
         Array(store.session.slots.enumerated()).compactMap { index, slot in
             let selectedVersionID = store.currentPreviewVersionID(for: slot.id) ?? slot.defaultVersionID
             guard let selectedVersion = slot.versionOptions.first(where: { $0.id == selectedVersionID }) else {
                 return nil
             }
+            
             let requestedSource = store.currentSource(for: slot.id) ?? slot.defaultSource
             let renderData = dataProvider.resolve(
                 slot: slot,
                 selectedVersionID: selectedVersion.id,
                 selectedSource: requestedSource
             )
+            
             let effectiveSource = renderData?.source ?? requestedSource
-
             return ViewerLogicalEntry(
                 id: slot.id,
                 logicalIndex: index,
@@ -138,26 +135,25 @@ struct UniversalDocViewer: View {
             )
         }
     }
-
+    
     private var focusedEntry: ViewerLogicalEntry? {
         if let focusedID = store.focusedLogicalPageID,
            let matched = logicalEntries.first(where: { $0.id == focusedID }) {
             return matched
         }
-
         guard store.currentPageIndex >= 0,
               store.currentPageIndex < logicalEntries.count else {
             return logicalEntries.first
         }
         return logicalEntries[store.currentPageIndex]
     }
-
+    
     private var groupEntries: [ViewerGroupEntry] {
         let grouped = Dictionary(grouping: logicalEntries) { entry in
             let groupToken = entry.slot.pageGroupID?.uuidString ?? "ungrouped"
             return "\(entry.slot.docID.uuidString)|\(groupToken)"
         }
-
+        
         return grouped.compactMap { key, values in
             guard let first = values.first else { return nil }
             let orderedValues = values.sorted { lhs, rhs in
@@ -166,7 +162,6 @@ struct UniversalDocViewer: View {
                 }
                 return lhs.slot.pageOrderInGroup < rhs.slot.pageOrderInGroup
             }
-
             return ViewerGroupEntry(
                 id: key,
                 docID: first.slot.docID,
@@ -184,18 +179,18 @@ struct UniversalDocViewer: View {
             return lhs.groupOrderKey < rhs.groupOrderKey
         }
     }
-
+    
     private var focusedGroupEntry: ViewerGroupEntry? {
         guard let focusedEntry else { return groupEntries.first }
         return groupEntries.first(where: { group in
             group.entries.contains(where: { $0.id == focusedEntry.id })
         }) ?? groupEntries.first
     }
-
+    
     private var groupCount: Int {
         groupEntries.count
     }
-
+    
     private var currentGroupNumber: Int {
         guard let focusedGroupEntry,
               let index = groupEntries.firstIndex(where: { $0.id == focusedGroupEntry.id }) else {
@@ -203,34 +198,32 @@ struct UniversalDocViewer: View {
         }
         return index + 1
     }
-
+    
     private var pageCount: Int {
         logicalEntries.count
     }
-
+    
     private var currentPageNumber: Int {
         (focusedEntry?.logicalIndex ?? 0) + 1
     }
-
+    
     private var isOCRMode: Bool {
         focusedEntry?.selectedSource == .ocr
     }
-
+    
     private var focusedPageGroupName: String {
         guard let focusedGroupEntry else { return "" }
-        return "\(focusedGroupEntry.docTitle) · \(focusedGroupEntry.pageGroupTitle)"
+        return "\(focusedGroupEntry.docTitle) • \(focusedGroupEntry.pageGroupTitle)"
     }
-
+    
     private var logicalEntryByID: [UUID: ViewerLogicalEntry] {
         Dictionary(uniqueKeysWithValues: logicalEntries.map { ($0.id, $0) })
     }
-
+    
     private var composedPDFEntries: [ComposedPDFPageEntry] {
         var composed: [ComposedPDFPageEntry] = []
-
         for entry in logicalEntries {
             guard let pdfRender = resolvedPDFRenderData(for: entry) else { continue }
-
             composed.append(
                 ComposedPDFPageEntry(
                     id: entry.id,
@@ -243,29 +236,27 @@ struct UniversalDocViewer: View {
                 )
             )
         }
-
         return composed
     }
-
+    
     private var composedIndexByLogicalPageID: [UUID: Int] {
         Dictionary(uniqueKeysWithValues: composedPDFEntries.enumerated().map { ($1.logicalPageID, $0) })
     }
-
+    
     private var focusedComposedIndex: Int? {
         guard let focusedEntry else { return nil }
         return composedIndexByLogicalPageID[focusedEntry.id]
     }
-
+    
     private var composedIndexByPageVersionID: [UUID: Int] {
         Dictionary(uniqueKeysWithValues: composedPDFEntries.enumerated().map { ($1.pageVersionID, $0) })
     }
-
+    
     private var noteAnchors: [NoteAnchorOverlayItem] {
         guard let notesViewModel,
               !isOCRMode else {
             return []
         }
-
         return notesViewModel.notes.compactMap { note in
             guard let composedIndex = composedIndexByPageVersionID[note.pageVersionID] else {
                 return nil
@@ -284,14 +275,14 @@ struct UniversalDocViewer: View {
             )
         }
     }
-
-    private var pageTagItems: [PageTagOverlayItem] {
-        guard !isOCRMode else { return [] }
-
-        return composedPDFEntries.enumerated().compactMap { composedIndex, composedEntry in
+    
+    private var pageTagsByComposedIndex: [Int: PageTagOverlayItem] {
+        guard !isOCRMode else { return [:] }
+        var dict: [Int: PageTagOverlayItem] = [:]
+        for (composedIndex, composedEntry) in composedPDFEntries.enumerated() {
             let tags = dataProvider.tags(pageID: composedEntry.pageID)
-            guard !tags.isEmpty else { return nil }
-
+            guard !tags.isEmpty else { continue }
+            
             let chips = tags.map { tag in
                 PageTagOverlayChip(
                     id: tag.id,
@@ -300,23 +291,36 @@ struct UniversalDocViewer: View {
                 )
             }
             let groupTitle = logicalEntryByID[composedEntry.logicalPageID]?.slot.pageGroupTitle ?? ""
-            return PageTagOverlayItem(
+            dict[composedIndex] = PageTagOverlayItem(
                 composedPageIndex: composedIndex,
                 pageGroupTitle: groupTitle,
                 chips: chips
             )
         }
+        return dict
     }
-
+    
     private var selectedNoteID: UUID? {
         notesViewModel?.selectedNoteID
     }
-
+    
     private var selectedNoteAnchor: NoteAnchorOverlayItem? {
         guard let selectedNoteID else { return nil }
         return noteAnchors.first(where: { $0.id == selectedNoteID })
     }
-
+    
+    private var allPageVersionIDs: [UUID] {
+        var seen = Set<UUID>()
+        var ordered: [UUID] = []
+        for entry in logicalEntries {
+            let versionID = entry.selectedVersion.id
+            if seen.insert(versionID).inserted {
+                ordered.append(versionID)
+            }
+        }
+        return ordered
+    }
+    
     private var currentNotesPageVersionIDs: [UUID] {
         guard !isOCRMode, let focusedGroupEntry else { return [] }
         var seen = Set<UUID>()
@@ -329,7 +333,7 @@ struct UniversalDocViewer: View {
         }
         return ordered
     }
-
+    
     private var currentNotesPageSectionTitles: [UUID: String] {
         guard let focusedGroupEntry else { return [:] }
         var map: [UUID: String] = [:]
@@ -338,15 +342,15 @@ struct UniversalDocViewer: View {
         }
         return map
     }
-
+    
     private var canCreateVersion: Bool {
         focusedEntry != nil
     }
-
+    
     private var canEditNotes: Bool {
         noteInteractionMode == .edit && !isOCRMode
     }
-
+    
     var body: some View {
         Group {
             if logicalEntries.isEmpty {
@@ -384,14 +388,14 @@ struct UniversalDocViewer: View {
                 notesViewModel = DocNotesEditorViewModel(modelContext: modelContext)
             }
             ensureFocusSeeded()
-            syncNotesForFocusedGroup()
+            syncNotesForAllPages()
             applyInitialNoteSelectionIfPossible()
+            
             if let focusedComposedIndex, focusedComposedIndex != 0 {
                 requestJump(to: focusedComposedIndex)
             }
         }
         .onChange(of: store.focusedLogicalPageID) { _, _ in
-            syncNotesForFocusedGroup()
             applyInitialNoteSelectionIfPossible()
             isNoteCreateMode = false
         }
@@ -405,15 +409,15 @@ struct UniversalDocViewer: View {
             focus(noteID: noteID, force: true)
         }
     }
-
+    
     private var contentLayout: some View {
         VStack(spacing: 0) {
             topControlBar
-
+            
             if horizontalSizeClass == .regular {
                 HStack(spacing: 0) {
                     mainReader
-
+                    
                     if !isOCRMode {
                         Divider()
                         notesPanel
@@ -432,7 +436,7 @@ struct UniversalDocViewer: View {
         }
         .background(Color(.systemGroupedBackground))
     }
-
+    
     private var topControlBar: some View {
         VStack(spacing: 8) {
             HStack(spacing: 10) {
@@ -443,7 +447,7 @@ struct UniversalDocViewer: View {
                         .font(.title2)
                 }
                 .disabled(currentGroupNumber <= 1)
-
+                
                 Button {
                     showingGroupJumpSheet = true
                 } label: {
@@ -459,7 +463,7 @@ struct UniversalDocViewer: View {
                         )
                 }
                 .buttonStyle(.plain)
-
+                
                 Button {
                     navigateGroup(delta: 1)
                 } label: {
@@ -467,35 +471,34 @@ struct UniversalDocViewer: View {
                         .font(.title2)
                 }
                 .disabled(currentGroupNumber >= groupCount)
-
+                
                 Text("Page \(currentPageNumber) / \(pageCount)")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .padding(.leading, 4)
-
+                
                 Spacer()
-
+                
                 versionMenu
                 sourceMenu
                 inlineNotesToggle
                 notesModeToggle
-
+                
                 Menu {
                     Picker("Apply", selection: $sourceApplyScope) {
                         ForEach(SourceApplyScope.allCases) { scope in
                             Text(scope.title).tag(scope)
                         }
                     }
-
                     Divider()
-
+                    
                     Button {
                         showingCreateVersionSheet = true
                     } label: {
                         Label("New Version", systemImage: "plus.circle")
                     }
                     .disabled(!canCreateVersion)
-
+                    
                     Button {
                         if canEditNotes {
                             isNoteCreateMode.toggle()
@@ -512,7 +515,7 @@ struct UniversalDocViewer: View {
                         .font(.title3)
                 }
             }
-
+            
             Text(focusedPageGroupName)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
@@ -522,7 +525,7 @@ struct UniversalDocViewer: View {
         .padding(.vertical, 10)
         .background(.ultraThinMaterial)
     }
-
+    
     private var inlineNotesToggle: some View {
         Button {
             showsInlineNoteBubbles.toggle()
@@ -545,7 +548,7 @@ struct UniversalDocViewer: View {
         .disabled(isOCRMode)
         .opacity(isOCRMode ? 0.5 : 1)
     }
-
+    
     private var notesModeToggle: some View {
         Button {
             noteInteractionMode = noteInteractionMode == .edit ? .view : .edit
@@ -571,7 +574,7 @@ struct UniversalDocViewer: View {
         .disabled(isOCRMode)
         .opacity(isOCRMode ? 0.5 : 1)
     }
-
+    
     private var versionMenu: some View {
         Menu {
             if let focusedEntry {
@@ -581,7 +584,7 @@ struct UniversalDocViewer: View {
                         if let focusedComposedIndex {
                             requestJump(to: focusedComposedIndex)
                         }
-                        syncNotesForFocusedGroup()
+                        syncNotesForAllPages()
                     } label: {
                         if option.id == focusedEntry.selectedVersion.id {
                             Label(versionTitle(option), systemImage: "checkmark")
@@ -607,7 +610,7 @@ struct UniversalDocViewer: View {
             )
         }
     }
-
+    
     private var sourceMenu: some View {
         Menu {
             ForEach(UniversalDocViewerSource.allCases) { source in
@@ -621,9 +624,7 @@ struct UniversalDocViewer: View {
                     }
                 }
             }
-
             Divider()
-
             Picker("Scope", selection: $sourceApplyScope) {
                 ForEach(SourceApplyScope.allCases) { scope in
                     Text(scope.title).tag(scope)
@@ -645,7 +646,7 @@ struct UniversalDocViewer: View {
             )
         }
     }
-
+    
     @ViewBuilder
     private var mainReader: some View {
         if isOCRMode {
@@ -654,7 +655,7 @@ struct UniversalDocViewer: View {
             pdfReader
         }
     }
-
+    
     private var pdfReader: some View {
         ContinuousPDFViewerRepresentable(
             entries: composedPDFEntries,
@@ -662,7 +663,7 @@ struct UniversalDocViewer: View {
             jumpRequestID: jumpRequestID,
             focusRequestID: noteFocusRequestID,
             noteAnchors: noteAnchors,
-            pageTagItems: pageTagItems,
+            pageTagsByComposedIndex: pageTagsByComposedIndex,
             selectedNoteID: selectedNoteID,
             focusAnchor: selectedNoteAnchor,
             isNoteCreateMode: isNoteCreateMode && canEditNotes,
@@ -683,7 +684,7 @@ struct UniversalDocViewer: View {
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-
+    
     private var ocrReader: some View {
         Group {
             if let focusedEntry,
@@ -706,7 +707,7 @@ struct UniversalDocViewer: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-
+    
     private var notesPanel: some View {
         Group {
             if notesPanelCollapsed {
@@ -721,18 +722,18 @@ struct UniversalDocViewer: View {
                     }
                     .buttonStyle(.plain)
                     .padding(.top, 12)
-
+                    
                     Divider()
-
+                    
                     Image(systemName: "text.bubble")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-
+                    
                     Text("Notes")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .rotationEffect(.degrees(-90))
-
+                    
                     Spacer()
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -757,9 +758,9 @@ struct UniversalDocViewer: View {
                     .padding(.horizontal, 12)
                     .padding(.vertical, 10)
                     .background(.thinMaterial)
-
+                    
                     Divider()
-
+                    
                     Group {
                         if let notesViewModel {
                             DocNotesPane(
@@ -783,7 +784,7 @@ struct UniversalDocViewer: View {
             }
         }
     }
-
+    
     private var notesDrawer: some View {
         VStack(spacing: 0) {
             Button {
@@ -801,7 +802,7 @@ struct UniversalDocViewer: View {
                 .background(.ultraThinMaterial)
             }
             .buttonStyle(.plain)
-
+            
             if notesDrawerExpanded {
                 if let notesViewModel {
                     DocNotesPane(
@@ -823,16 +824,16 @@ struct UniversalDocViewer: View {
         }
         .background(.ultraThinMaterial)
     }
-
+    
     // MARK: - Actions
-
+    
     private func ensureFocusSeeded() {
         if store.focusedLogicalPageID == nil,
            let first = store.session.slots.first {
             store.setFocusedPage(first.id)
         }
     }
-
+    
     private func navigateGroup(delta: Int) {
         guard let focusedGroupEntry,
               let currentIndex = groupEntries.firstIndex(where: { $0.id == focusedGroupEntry.id }) else {
@@ -842,23 +843,23 @@ struct UniversalDocViewer: View {
         guard targetIndex >= 0, targetIndex < groupEntries.count else { return }
         jumpToGroup(groupID: groupEntries[targetIndex].id)
     }
-
+    
     private func jumpToGroup(groupID: String) {
         guard let targetGroup = groupEntries.first(where: { $0.id == groupID }) else {
             return
         }
-
         let targetLogicalPageID = targetGroup.entries
             .first(where: { composedIndexByLogicalPageID[$0.id] != nil })?.id
             ?? targetGroup.firstLogicalPageID
-
+            
         guard let targetLogicalPageID else { return }
         store.setFocusedPage(targetLogicalPageID)
+        
         if let composedIndex = composedIndexByLogicalPageID[targetLogicalPageID] {
             requestJump(to: composedIndex)
         }
     }
-
+    
     private func applySource(_ source: UniversalDocViewerSource) {
         let wasOCRMode = isOCRMode
         switch sourceApplyScope {
@@ -867,21 +868,19 @@ struct UniversalDocViewer: View {
         case .global:
             store.changeSourceForAllPages(to: source, using: dataProvider)
         }
-
-        // Keep viewport stable when switching between PDF sources (Display/Original).
-        // Only request an explicit jump when OCR mode is involved.
+        
         if (wasOCRMode || source == .ocr),
            let focusedComposedIndex {
             requestJump(to: focusedComposedIndex)
         }
-        syncNotesForFocusedGroup()
+        syncNotesForAllPages()
     }
-
+    
     private func requestJump(to composedIndex: Int) {
         pendingJumpComposedIndex = composedIndex
         jumpRequestID &+= 1
     }
-
+    
     private func focus(noteID: UUID, force: Bool) {
         guard let notesViewModel,
               let note = notesViewModel.noteIndex[noteID],
@@ -890,28 +889,29 @@ struct UniversalDocViewer: View {
               composedIndex < composedPDFEntries.count else {
             return
         }
-
+        
         let logicalPageID = composedPDFEntries[composedIndex].logicalPageID
         store.setFocusedPage(logicalPageID)
+        
         if force || focusedComposedIndex != composedIndex {
             requestJump(to: composedIndex)
         }
         noteFocusRequestID &+= 1
     }
-
+    
     private func handleFocusedComposedIndex(_ composedIndex: Int) {
         guard composedIndex >= 0, composedIndex < composedPDFEntries.count else { return }
         let logicalPageID = composedPDFEntries[composedIndex].logicalPageID
         store.setFocusedPage(logicalPageID)
     }
-
+    
     private func resolvedPDFRenderData(for entry: ViewerLogicalEntry) -> (fileURL: URL, pageNumber: Int)? {
         if let renderData = entry.renderData,
            renderData.source != .ocr,
            let fileURL = renderData.fileURL {
             return (fileURL, renderData.pageNumber)
         }
-
+        
         for candidate in [UniversalDocViewerSource.display, .original] {
             let fallback = dataProvider.resolve(
                 slot: entry.slot,
@@ -924,51 +924,51 @@ struct UniversalDocViewer: View {
                 return (fileURL, fallback.pageNumber)
             }
         }
-
+        
         return nil
     }
-
-    private func syncNotesForFocusedGroup() {
+    
+    private func syncNotesForAllPages() {
         guard let notesViewModel else { return }
-        let pageVersionIDs = currentNotesPageVersionIDs
+        let pageVersionIDs = allPageVersionIDs
         let signature = pageVersionIDs.map(\.uuidString).joined(separator: "|")
         guard signature != loadedNotesSignature else { return }
-
+        
         loadedNotesSignature = signature
-        notesViewModel.loadNotes(pageVersionIDs: pageVersionIDs)
+        notesViewModel.loadNotes(scope: store.session.scope, pageVersionIDs: pageVersionIDs)
         applyInitialNoteSelectionIfPossible()
     }
-
+    
     private func applyInitialNoteSelectionIfPossible() {
         guard let pendingInitialNoteID,
               let notesViewModel,
               notesViewModel.noteIndex[pendingInitialNoteID] != nil else {
             return
         }
-
+        
         notesViewModel.selectedNoteID = pendingInitialNoteID
         focus(noteID: pendingInitialNoteID, force: true)
-        // Run a second pass on next runloop so initial search navigation still jumps
-        // even if PDFView/layout finishes one frame later.
+        
         DispatchQueue.main.async {
-            focus(noteID: pendingInitialNoteID, force: true)
+            self.focus(noteID: pendingInitialNoteID, force: true)
         }
+        
         self.pendingInitialNoteID = nil
     }
-
+    
     private func createRootNote(composedIndex: Int, normalizedRect: CGRect) {
         guard composedIndex >= 0,
               composedIndex < composedPDFEntries.count,
               let notesViewModel else {
             return
         }
-
+        
         let composedEntry = composedPDFEntries[composedIndex]
         guard let logicalEntry = logicalEntries.first(where: { $0.id == composedEntry.logicalPageID }),
               let page = logicalEntry.page else {
             return
         }
-
+        
         notesViewModel.createRoot(
             pageVersionID: composedEntry.pageVersionID,
             page: page,
@@ -976,11 +976,11 @@ struct UniversalDocViewer: View {
             title: nil,
             body: "New note"
         )
-
+        
         store.setFocusedPage(composedEntry.logicalPageID)
         isNoteCreateMode = false
     }
-
+    
     private func versionTitle(_ option: UniversalDocVersionOption?) -> String {
         guard let option else { return "Version" }
         let defaultMark = option.isCurrentDefault ? " (Default)" : ""
@@ -988,13 +988,13 @@ struct UniversalDocViewer: View {
     }
 }
 
+// ... the rest of sheets are the same
 private struct GroupJumpSheet: View {
     @Environment(\.dismiss) private var dismiss
-
     let groups: [ViewerGroupEntry]
     let currentGroupID: String?
     let onSubmit: (String) -> Void
-
+    
     var body: some View {
         NavigationStack {
             List {
@@ -1025,7 +1025,7 @@ private struct GroupJumpRow: View {
     let group: ViewerGroupEntry
     let isCurrent: Bool
     let onTap: () -> Void
-
+    
     var body: some View {
         Button(action: onTap) {
             HStack {
@@ -1036,9 +1036,7 @@ private struct GroupJumpRow: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-
                 Spacer()
-
                 if isCurrent {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundColor(.accentColor)
@@ -1051,29 +1049,29 @@ private struct GroupJumpRow: View {
 private struct CreatePageVersionSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-
     @Query(sort: \PDFBundle.createdAt, order: .reverse) private var bundles: [PDFBundle]
-
+    
     let pageID: UUID
     let baseVersionID: UUID
     let onCreated: (_ pageVersionID: UUID) -> Void
-
+    
     @State private var selectedBundleID: UUID?
     @State private var pageNumber: Int = 1
     @State private var inheritTags = true
     @State private var inheritVariables = true
     @State private var inheritNoteBlocks = false
+    
     @State private var isSaving = false
     @State private var errorMessage: String?
     @State private var showingImportBundle = false
     @State private var showingBundleCreationPrompt = false
     @State private var hasPromptedBundleCreation = false
-
+    
     private var selectedBundle: PDFBundle? {
         guard let selectedBundleID else { return nil }
         return bundles.first(where: { $0.id == selectedBundleID })
     }
-
+    
     var body: some View {
         NavigationStack {
             Form {
@@ -1091,20 +1089,20 @@ private struct CreatePageVersionSheet: View {
                         }
                         Stepper("Page Number: \(pageNumber)", value: $pageNumber, in: 1...9999)
                     }
-
+                    
                     Button {
                         showingImportBundle = true
                     } label: {
                         Label("Import PDF Bundle", systemImage: "plus.circle")
                     }
                 }
-
+                
                 Section("Inherit From Base Version") {
                     Toggle("Tags", isOn: $inheritTags)
                     Toggle("Variables", isOn: $inheritVariables)
                     Toggle("Note Blocks", isOn: $inheritNoteBlocks)
                 }
-
+                
                 if let errorMessage {
                     Section {
                         Text(errorMessage)
@@ -1152,19 +1150,20 @@ private struct CreatePageVersionSheet: View {
             }
         }
     }
-
+    
     private var canCreate: Bool {
         selectedBundle != nil
     }
-
+    
     private func seedDefaultsIfNeeded() {
         guard selectedBundleID == nil else { return }
         guard !bundles.isEmpty else { return }
+        
         guard let page = fetchPage() else {
             selectedBundleID = bundles.first?.id
             return
         }
-
+        
         let preferredBundleID = page.currentPDFBundleID
         if bundles.contains(where: { $0.id == preferredBundleID }) {
             selectedBundleID = preferredBundleID
@@ -1173,7 +1172,7 @@ private struct CreatePageVersionSheet: View {
         }
         pageNumber = max(page.currentPageNumber, 1)
     }
-
+    
     private func createVersion() {
         guard let page = fetchPage() else {
             errorMessage = "Unable to resolve the target page."
@@ -1186,17 +1185,17 @@ private struct CreatePageVersionSheet: View {
             errorMessage = "Please select a bundle."
             return
         }
-
+        
         isSaving = true
         defer { isSaving = false }
-
+        
         let baseVersion = page.versions?.first(where: { $0.id == baseVersionID }) ?? page.latestVersion
         let inheritance = VersionInheritanceOptions(
             inheritTags: inheritTags,
             inheritVariables: inheritVariables,
             inheritNoteBlocks: inheritNoteBlocks
         )
-
+        
         do {
             let service = PageVersionService(modelContext: modelContext)
             guard let created = try service.createVersion(
@@ -1209,6 +1208,7 @@ private struct CreatePageVersionSheet: View {
                 errorMessage = "No new version created because bundle/page is unchanged."
                 return
             }
+            
             try modelContext.save()
             onCreated(created.id)
             dismiss()
@@ -1216,20 +1216,21 @@ private struct CreatePageVersionSheet: View {
             errorMessage = error.localizedDescription
         }
     }
-
+    
     private func promptForBundleCreationIfNeeded(force: Bool = false) {
         guard bundles.isEmpty else { return }
         guard force || !hasPromptedBundleCreation else { return }
         hasPromptedBundleCreation = true
         showingBundleCreationPrompt = true
     }
-
+    
     private func fetchPage() -> Page? {
-        let descriptor = FetchDescriptor<Page>(
+        var descriptor = FetchDescriptor<Page>(
             predicate: #Predicate { page in
                 page.id == pageID
             }
         )
+        descriptor.fetchLimit = 1
         return try? modelContext.fetch(descriptor).first
     }
 }

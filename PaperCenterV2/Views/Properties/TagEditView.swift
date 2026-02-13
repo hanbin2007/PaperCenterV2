@@ -61,7 +61,7 @@ struct TagEditView: View {
                 Section("Preview") {
                     HStack {
                         Circle()
-                            .fill(Color(hex: color) ?? .blue)
+                            .fill(Color(hex: color))
                             .frame(width: 20, height: 20)
 
                         Text(name.isEmpty ? "Tag Name" : name)

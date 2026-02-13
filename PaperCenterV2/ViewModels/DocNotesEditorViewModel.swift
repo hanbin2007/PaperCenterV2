@@ -3,21 +3,20 @@
 //  PaperCenterV2
 //
 //  Editing and persistence layer for NoteBlock trees bound to a page version.
-//
 
 import CoreGraphics
 import Foundation
 import SwiftData
 
 @MainActor
-@Observable
-final class DocNotesEditorViewModel {
+@Observable final class DocNotesEditorViewModel {
     private let modelContext: ModelContext
-
+    var currentScope: UniversalDocSessionScope?
     var currentPageVersionIDs: [UUID] = []
+    
     var notes: [NoteBlock] = []
     var selectedNoteID: UUID?
-
+    
     var statusMessage: String?
     var errorMessage: String?
 
@@ -47,8 +46,10 @@ final class DocNotesEditorViewModel {
         loadNotes(pageVersionIDs: [pageVersionID])
     }
 
-    func loadNotes(pageVersionIDs: [UUID]) {
-        currentPageVersionIDs = pageVersionIDs
+    func loadNotes(scope: UniversalDocSessionScope? = nil, pageVersionIDs: [UUID]) {
+        if let scope { self.currentScope = scope }
+        self.currentPageVersionIDs = pageVersionIDs
+        
         let targetIDs = Set(pageVersionIDs)
         guard !targetIDs.isEmpty else {
             notes = []
@@ -56,31 +57,56 @@ final class DocNotesEditorViewModel {
             return
         }
 
-        let descriptor = FetchDescriptor<NoteBlock>(
-            predicate: #Predicate { note in
-                note.isDeleted == false
-            }
-        )
-
         do {
-            let fetched = try modelContext.fetch(descriptor)
-            notes = fetched
+            var allFetched: [NoteBlock] = []
+            
+            // O(1) query by docId eliminates huge database bottlenecks during scroll
+            if let currentScope = self.currentScope {
+                switch currentScope {
+                case .singleDoc(let docID):
+                    let descriptor = FetchDescriptor<NoteBlock>(
+                        predicate: #Predicate { note in
+                            note.docId == docID && note.isDeleted == false
+                        }
+                    )
+                    allFetched.append(contentsOf: try modelContext.fetch(descriptor))
+                    
+                case .allDocuments(let docIDs):
+                    for docID in docIDs {
+                        let descriptor = FetchDescriptor<NoteBlock>(
+                            predicate: #Predicate { note in
+                                note.docId == docID && note.isDeleted == false
+                            }
+                        )
+                        allFetched.append(contentsOf: try modelContext.fetch(descriptor))
+                    }
+                }
+            } else {
+                let descriptor = FetchDescriptor<NoteBlock>(
+                    predicate: #Predicate { note in
+                        note.isDeleted == false
+                    }
+                )
+                allFetched = try modelContext.fetch(descriptor)
+            }
+            
+            notes = allFetched
                 .filter { targetIDs.contains($0.pageVersionID) }
                 .sorted { lhs, rhs in
-                if lhs.pageOrderIndex != rhs.pageOrderIndex {
-                    return lhs.pageOrderIndex < rhs.pageOrderIndex
+                    if lhs.pageOrderIndex != rhs.pageOrderIndex {
+                        return lhs.pageOrderIndex < rhs.pageOrderIndex
+                    }
+                    if lhs.verticalOrderHint != rhs.verticalOrderHint {
+                        return lhs.verticalOrderHint < rhs.verticalOrderHint
+                    }
+                    if lhs.createdAt == rhs.createdAt {
+                        return lhs.id.uuidString < rhs.id.uuidString
+                    }
+                    return lhs.createdAt < rhs.createdAt
                 }
-                if lhs.verticalOrderHint != rhs.verticalOrderHint {
-                    return lhs.verticalOrderHint < rhs.verticalOrderHint
-                }
-                if lhs.createdAt == rhs.createdAt {
-                    return lhs.id.uuidString < rhs.id.uuidString
-                }
-                return lhs.createdAt < rhs.createdAt
-            }
 
             if let selectedNoteID,
-               notes.contains(where: { $0.id == selectedNoteID }) == false {
+               !notes.contains(where: { $0.id == selectedNoteID }) {
                 self.selectedNoteID = nil
             }
         } catch {
@@ -180,6 +206,7 @@ final class DocNotesEditorViewModel {
         note.rectHeight = rect.size.height
         note.verticalOrderHint = rect.minY
         note.touch()
+
         persist(success: "Anchor updated")
     }
 
@@ -235,7 +262,6 @@ final class DocNotesEditorViewModel {
             } else {
                 note.parent = nil
                 note.parentNoteID = nil
-
                 var roots = rootNotes.filter { $0.id != note.id }
                 let insertionIndex = min(max(index ?? roots.count, 0), roots.count)
                 roots.insert(note, at: insertionIndex)
@@ -274,11 +300,12 @@ final class DocNotesEditorViewModel {
     // MARK: - Helpers
 
     private func fetchPageVersion(id: UUID) -> PageVersion? {
-        let descriptor = FetchDescriptor<PageVersion>(
+        var descriptor = FetchDescriptor<PageVersion>(
             predicate: #Predicate { version in
                 version.id == id
             }
         )
+        descriptor.fetchLimit = 1
         return try? modelContext.fetch(descriptor).first
     }
 
@@ -322,8 +349,8 @@ final class DocNotesEditorViewModel {
     private func persist(success: String) {
         do {
             try modelContext.save()
-            if !currentPageVersionIDs.isEmpty {
-                loadNotes(pageVersionIDs: currentPageVersionIDs)
+            if let scope = currentScope, !currentPageVersionIDs.isEmpty {
+                loadNotes(scope: scope, pageVersionIDs: currentPageVersionIDs)
             }
             statusMessage = success
             errorMessage = nil

@@ -67,7 +67,7 @@ struct VariableEditView: View {
                 Section("Preview") {
                     HStack {
                         Circle()
-                            .fill(Color(hex: color) ?? .purple)
+                            .fill(Color(hex: color))
                             .frame(width: 20, height: 20)
 
                         Text(name.isEmpty ? "Variable Name" : name)

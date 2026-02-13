@@ -3,39 +3,38 @@
 //  PaperCenterV2
 //
 //  Note panel with hierarchical editing actions.
-//
 
 import SwiftUI
 
 struct DocNotesPane: View {
     @Bindable var viewModel: DocNotesEditorViewModel
-
+    
     let pageVersionIDs: [UUID]
     let pageSectionTitles: [UUID: String]
     let isVisible: Bool
     let isEditable: Bool
     let onNoteTapped: ((UUID) -> Void)?
-
+    
     @State private var composer: NoteComposer?
     @State private var metadataEditor: NoteMetadataEditor?
-
+    
     private struct NotesSection: Identifiable {
         let pageVersionID: UUID
         let title: String
         let nodes: [FlattenedNode]
-
         var id: UUID { pageVersionID }
     }
-
+    
     private struct FlattenedNode: Identifiable {
         let id: UUID
         let note: NoteBlock
         let depth: Int
     }
-
+    
     private var sectionedNotes: [NotesSection] {
         var seen = Set<UUID>()
         let orderedIDs = pageVersionIDs.filter { seen.insert($0).inserted }
+        
         return orderedIDs.compactMap { pageVersionID in
             let nodes = flattenedNotes(for: pageVersionID)
             guard !nodes.isEmpty else { return nil }
@@ -46,26 +45,27 @@ struct DocNotesPane: View {
             )
         }
     }
-
+    
     private var totalNoteCount: Int {
         sectionedNotes.reduce(0) { $0 + $1.nodes.count }
     }
-
+    
     private func flattenedNotes(for pageVersionID: UUID) -> [FlattenedNode] {
         var result: [FlattenedNode] = []
+        
         func visit(_ note: NoteBlock, depth: Int) {
             result.append(FlattenedNode(id: note.id, note: note, depth: depth))
             for child in viewModel.orderedChildren(of: note.id) {
                 visit(child, depth: depth + 1)
             }
         }
-
+        
         for root in viewModel.rootNotes(for: pageVersionID) {
             visit(root, depth: 0)
         }
         return result
     }
-
+    
     var body: some View {
         Group {
             if !isVisible {
@@ -74,12 +74,7 @@ struct DocNotesPane: View {
                 content
             }
         }
-        .onAppear {
-            viewModel.loadNotes(pageVersionIDs: pageVersionIDs)
-        }
-        .onChange(of: pageVersionIDs) { _, newValue in
-            viewModel.loadNotes(pageVersionIDs: newValue)
-        }
+        // 我们利用顶层 UniversalDocViewer 按需加载了全部页面的笔记，不需要在这里强行覆盖绑定
         .onChange(of: isEditable) { _, editable in
             if !editable {
                 composer = nil
@@ -112,7 +107,7 @@ struct DocNotesPane: View {
             }
         }
     }
-
+    
     private var hiddenState: some View {
         VStack(spacing: 8) {
             Image(systemName: "eye.slash")
@@ -124,11 +119,11 @@ struct DocNotesPane: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()
     }
-
+    
     private var content: some View {
         VStack(alignment: .leading, spacing: 10) {
             header
-
+            
             if totalNoteCount == 0 {
                 ContentUnavailableView(
                     "No Notes",
@@ -148,7 +143,7 @@ struct DocNotesPane: View {
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                                     .padding(.horizontal, 2)
-
+                                
                                 ForEach(section.nodes) { item in
                                     noteRow(item)
                                 }
@@ -159,13 +154,13 @@ struct DocNotesPane: View {
                     .padding(.vertical, 4)
                 }
             }
-
+            
             statusRow
         }
         .padding(12)
         .background(.thinMaterial)
     }
-
+    
     private var header: some View {
         HStack {
             Text("Notes")
@@ -176,7 +171,7 @@ struct DocNotesPane: View {
                 .foregroundStyle(.secondary)
         }
     }
-
+    
     private func noteRow(_ item: FlattenedNode) -> some View {
         let note = item.note
         return VStack(alignment: .leading, spacing: 6) {
@@ -194,7 +189,7 @@ struct DocNotesPane: View {
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                     }
-
+                    
                     VStack(alignment: .leading, spacing: 2) {
                         if let title = note.title, !title.isEmpty {
                             Text(title)
@@ -203,18 +198,16 @@ struct DocNotesPane: View {
                                 .foregroundStyle(.primary)
                                 .lineLimit(1)
                         }
-
                         Text(note.body)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .lineLimit(3)
-
+                        
                         if let tags = note.tags, !tags.isEmpty {
                             TagDisplayView(tags: tags)
                                 .padding(.top, 2)
                         }
                     }
-
                     Spacer(minLength: 0)
                 }
                 .padding(8)
@@ -222,35 +215,34 @@ struct DocNotesPane: View {
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             }
             .buttonStyle(.plain)
-
+            
             HStack(spacing: 8) {
                 iconButton("arrow.up") {
                     move(noteID: note.id, direction: -1)
                 }
                 .disabled(!canMove(noteID: note.id, direction: -1))
-
+                
                 iconButton("arrow.down") {
                     move(noteID: note.id, direction: 1)
                 }
                 .disabled(!canMove(noteID: note.id, direction: 1))
-
+                
                 iconButton("arrowshape.turn.up.left") {
                     composer = NoteComposer(mode: .reply(parentID: note.id), title: nil, body: "")
                 }
-
+                
                 iconButton("square.and.pencil") {
                     composer = NoteComposer(mode: .edit(noteID: note.id), title: note.title, body: note.body)
                 }
-
+                
                 iconButton("tag") {
                     metadataEditor = NoteMetadataEditor(noteID: note.id)
                 }
-
+                
                 Menu {
                     Button("Move to Root") {
                         viewModel.moveToParent(noteID: note.id, newParentID: nil, at: nil)
                     }
-
                     let candidates = parentCandidates(for: note.id)
                     if !candidates.isEmpty {
                         Divider()
@@ -264,9 +256,9 @@ struct DocNotesPane: View {
                     Image(systemName: "arrow.up.left.and.arrow.down.right")
                         .font(.caption)
                 }
-
+                
                 Spacer()
-
+                
                 iconButton("trash", role: .destructive) {
                     viewModel.deleteSubtree(noteID: note.id)
                 }
@@ -279,7 +271,7 @@ struct DocNotesPane: View {
         }
         .padding(.vertical, 2)
     }
-
+    
     private var statusRow: some View {
         HStack(spacing: 8) {
             if let status = viewModel.statusMessage {
@@ -295,21 +287,21 @@ struct DocNotesPane: View {
             Spacer()
         }
     }
-
+    
     private func canMove(noteID: UUID, direction: Int) -> Bool {
         let siblings = siblingList(for: noteID)
         guard let index = siblings.firstIndex(where: { $0.id == noteID }) else { return false }
         let target = index + direction
         return target >= 0 && target < siblings.count
     }
-
+    
     private func move(noteID: UUID, direction: Int) {
         let siblings = siblingList(for: noteID)
         guard let index = siblings.firstIndex(where: { $0.id == noteID }) else { return }
         let destination = index + direction
         viewModel.moveSibling(noteID: noteID, from: index, to: destination)
     }
-
+    
     private func siblingList(for noteID: UUID) -> [NoteBlock] {
         guard let note = viewModel.noteIndex[noteID] else { return [] }
         if let parentID = note.parentNoteID {
@@ -317,7 +309,7 @@ struct DocNotesPane: View {
         }
         return viewModel.rootNotes
     }
-
+    
     private func parentCandidates(for noteID: UUID) -> [NoteBlock] {
         guard let note = viewModel.noteIndex[noteID] else { return [] }
         let excluded = Set(note.flattenedThread(from: viewModel.notes).map(\.id)).union([noteID])
@@ -330,7 +322,7 @@ struct DocNotesPane: View {
                 return lhs.createdAt < rhs.createdAt
             }
     }
-
+    
     private func iconButton(_ systemName: String, role: ButtonRole? = nil, action: @escaping () -> Void) -> some View {
         Button(role: role, action: action) {
             Image(systemName: systemName)
@@ -344,11 +336,9 @@ private struct NoteComposer: Identifiable {
         case edit(noteID: UUID)
         case reply(parentID: UUID)
     }
-
     let mode: Mode
     var title: String?
     var body: String
-
     var id: String {
         switch mode {
         case .edit(let noteID):
@@ -371,20 +361,19 @@ private struct NoteMetadataEditor: Identifiable {
 
 private struct NoteComposerSheet: View {
     @Environment(\.dismiss) private var dismiss
-
     let composer: NoteComposer
     let onSave: (NoteComposerPayload) -> Void
-
+    
     @State private var titleText: String
     @State private var bodyText: String
-
+    
     init(composer: NoteComposer, onSave: @escaping (NoteComposerPayload) -> Void) {
         self.composer = composer
         self.onSave = onSave
         _titleText = State(initialValue: composer.title ?? "")
         _bodyText = State(initialValue: composer.body)
     }
-
+    
     private var sheetTitle: String {
         switch composer.mode {
         case .edit:
@@ -393,14 +382,13 @@ private struct NoteComposerSheet: View {
             return "Reply"
         }
     }
-
+    
     var body: some View {
         NavigationStack {
             Form {
                 Section("Title") {
                     TextField("Optional", text: $titleText)
                 }
-
                 Section("Body") {
                     TextEditor(text: $bodyText)
                         .frame(minHeight: 180)
@@ -434,11 +422,9 @@ private struct NoteComposerSheet: View {
 private struct NoteMetadataEditorSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-
     let note: NoteBlock
-
     @State private var assignmentViewModel: TagVariableAssignmentViewModel?
-
+    
     var body: some View {
         NavigationStack {
             Group {
@@ -449,7 +435,6 @@ private struct NoteMetadataEditorSheet: View {
                                 viewModel: assignmentViewModel,
                                 layoutMode: .sheet
                             )
-
                             VariableValueSectionView(viewModel: assignmentViewModel)
                         }
                         .padding(16)

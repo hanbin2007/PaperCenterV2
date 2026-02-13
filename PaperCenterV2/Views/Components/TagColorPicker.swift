@@ -55,7 +55,7 @@ struct TagColorPicker: View {
             // Show current color with hex code
             HStack {
                 RoundedRectangle(cornerRadius: 6)
-                    .fill(Color(hex: selectedColor) ?? .blue)
+                    .fill(Color(hex: selectedColor))
                     .frame(width: 30, height: 30)
 
                 Text(selectedColor.uppercased())
@@ -78,7 +78,7 @@ private struct ColorButton: View {
         Button(action: action) {
             ZStack {
                 Circle()
-                    .fill(Color(hex: hexColor) ?? .blue)
+                    .fill(Color(hex: hexColor))
                     .frame(width: 44, height: 44)
 
                 if isSelected {

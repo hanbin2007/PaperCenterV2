@@ -28,6 +28,11 @@ final class PDFBundleListViewModel {
 
     // MARK: - Bundle Management
 
+    func addPDF(from url: URL, type: PDFType, to bundle: PDFBundle) async throws {
+        _ = try await importService.importPDF(from: url, type: type, into: bundle)
+        try modelContext.save()
+    }
+
     /// Delete a PDFBundle if it's safe to do so
     /// - Parameter bundle: Bundle to delete
     /// - Throws: Deletion errors

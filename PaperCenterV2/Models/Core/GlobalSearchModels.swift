@@ -150,7 +150,7 @@ struct TagFilter: Codable, Hashable {
         self.mode = mode
     }
 
-    var isActive: Bool {
+    nonisolated var isActive: Bool {
         !nameKeyword.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !selectedTagIDs.isEmpty
     }
 }
@@ -206,7 +206,7 @@ enum VariableFilterOperator: String, CaseIterable, Codable, Hashable, Identifiab
         }
     }
 
-    static func allowed(for type: VariableType) -> [VariableFilterOperator] {
+    nonisolated static func allowed(for type: VariableType) -> [VariableFilterOperator] {
         switch type {
         case .int, .date:
             return [.eq, .neq, .gt, .gte, .lt, .lte, .between, .isSet, .isEmpty]
@@ -217,7 +217,7 @@ enum VariableFilterOperator: String, CaseIterable, Codable, Hashable, Identifiab
         }
     }
 
-    static func defaultOperator(for type: VariableType) -> VariableFilterOperator {
+    nonisolated static func defaultOperator(for type: VariableType) -> VariableFilterOperator {
         switch type {
         case .int, .date:
             return .eq
@@ -228,7 +228,7 @@ enum VariableFilterOperator: String, CaseIterable, Codable, Hashable, Identifiab
         }
     }
 
-    var needsValue: Bool {
+    nonisolated var needsValue: Bool {
         self != .isSet && self != .isEmpty
     }
 }
@@ -294,7 +294,7 @@ struct GlobalSearchOptions: Codable, Hashable {
         variableRulesMode: .and
     )
 
-    var hasStructuredFilters: Bool {
+    nonisolated var hasStructuredFilters: Bool {
         tagFilter.isActive || !variableRules.isEmpty
     }
 }

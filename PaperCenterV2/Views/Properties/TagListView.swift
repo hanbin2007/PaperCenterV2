@@ -194,7 +194,7 @@ private struct TagRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Circle()
-                .fill(Color(hex: tag.color) ?? .blue)
+                .fill(Color(hex: tag.color))
                 .frame(width: 20, height: 20)
 
             VStack(alignment: .leading, spacing: 4) {

@@ -200,7 +200,7 @@ private struct VariableRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Circle()
-                .fill(Color(hex: variable.color) ?? .purple)
+                .fill(Color(hex: variable.color))
                 .frame(width: 20, height: 20)
 
             VStack(alignment: .leading, spacing: 4) {

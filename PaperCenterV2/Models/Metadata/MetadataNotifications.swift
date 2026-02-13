@@ -8,5 +8,5 @@
 import Foundation
 
 extension Notification.Name {
-    static let metadataCatalogDidChange = Notification.Name("MetadataCatalogDidChange")
+    nonisolated static let metadataCatalogDidChange = Notification.Name("MetadataCatalogDidChange")
 }

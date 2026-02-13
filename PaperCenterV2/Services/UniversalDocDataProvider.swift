@@ -3,7 +3,6 @@
 //  PaperCenterV2
 //
 //  Resolves session selections into concrete render data.
-//
 
 import Foundation
 import SwiftData
@@ -17,14 +16,17 @@ struct UniversalDocRenderablePage {
     let pageNumber: Int
     let bundleDisplayName: String
     let ocrText: String?
-    let noteBlocks: [NoteBlock]
 }
 
 @MainActor
 final class UniversalDocDataProvider {
     private let modelContext: ModelContext
+    
+    // 引入全维度内存缓存以解决重绘时的高频同步 Fetch 瓶颈
     private var bundleCache: [UUID: PDFBundle] = [:]
     private var pageCountCache: [String: Int] = [:]
+    private var pageCache: [UUID: Page] = [:]
+    private var pageVersionCache: [UUID: PageVersion] = [:]
 
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
@@ -64,7 +66,6 @@ final class UniversalDocDataProvider {
 
         let fileURL = bundle.fileURL(for: source.toPDFType)
         let ocrText = bundle.ocrTextByPage[version.pageNumber]
-        let notes = fetchNotes(pageVersionID: version.id)
 
         return UniversalDocRenderablePage(
             logicalPageID: slot.id,
@@ -73,31 +74,34 @@ final class UniversalDocDataProvider {
             fileURL: fileURL,
             pageNumber: version.pageNumber,
             bundleDisplayName: bundle.displayName,
-            ocrText: ocrText,
-            noteBlocks: notes
+            ocrText: ocrText
         )
     }
 
     func page(for id: UUID) -> Page? {
-        let descriptor = FetchDescriptor<Page>(
+        if let cached = pageCache[id] { return cached }
+        var descriptor = FetchDescriptor<Page>(
             predicate: #Predicate { page in
                 page.id == id
             }
         )
-        return try? modelContext.fetch(descriptor).first
+        descriptor.fetchLimit = 1
+        let fetched = try? modelContext.fetch(descriptor).first
+        if let fetched { pageCache[id] = fetched }
+        return fetched
     }
 
     func pageVersion(for id: UUID) -> PageVersion? {
-        let descriptor = FetchDescriptor<PageVersion>(
+        if let cached = pageVersionCache[id] { return cached }
+        var descriptor = FetchDescriptor<PageVersion>(
             predicate: #Predicate { version in
                 version.id == id
             }
         )
-        return try? modelContext.fetch(descriptor).first
-    }
-
-    func notes(pageVersionID: UUID) -> [NoteBlock] {
-        fetchNotes(pageVersionID: pageVersionID)
+        descriptor.fetchLimit = 1
+        let fetched = try? modelContext.fetch(descriptor).first
+        if let fetched { pageVersionCache[id] = fetched }
+        return fetched
     }
 
     func tags(pageID: UUID) -> [Tag] {
@@ -108,31 +112,14 @@ final class UniversalDocDataProvider {
         page(for: pageID)?.pageGroup?.title
     }
 
-    private func fetchNotes(pageVersionID: UUID) -> [NoteBlock] {
-        let descriptor = FetchDescriptor<NoteBlock>(
-            predicate: #Predicate { note in
-                note.pageVersionID == pageVersionID && note.isDeleted == false
-            }
-        )
-
-        let notes = (try? modelContext.fetch(descriptor)) ?? []
-        return notes.sorted { lhs, rhs in
-            if lhs.pageOrderIndex == rhs.pageOrderIndex {
-                return lhs.verticalOrderHint < rhs.verticalOrderHint
-            }
-            return lhs.pageOrderIndex < rhs.pageOrderIndex
-        }
-    }
-
     private func bundle(for id: UUID) -> PDFBundle? {
         if let cached = bundleCache[id] { return cached }
-
-        let descriptor = FetchDescriptor<PDFBundle>(
+        var descriptor = FetchDescriptor<PDFBundle>(
             predicate: #Predicate { bundle in
                 bundle.id == id
             }
         )
-
+        descriptor.fetchLimit = 1
         guard let fetched = try? modelContext.fetch(descriptor).first else {
             return nil
         }
@@ -146,7 +133,6 @@ final class UniversalDocDataProvider {
         pageNumber: Int
     ) -> Bool {
         guard pageNumber > 0 else { return false }
-
         if source == .ocr {
             let hasOCRText = bundle.ocrTextByPage[pageNumber]?.isEmpty == false
             if hasOCRText {
@@ -155,7 +141,6 @@ final class UniversalDocDataProvider {
             guard let ocrURL = bundle.fileURL(for: .ocr) else { return false }
             return containsPage(at: pageNumber, url: ocrURL)
         }
-
         guard let url = bundle.fileURL(for: source.toPDFType) else { return false }
         return containsPage(at: pageNumber, url: url)
     }

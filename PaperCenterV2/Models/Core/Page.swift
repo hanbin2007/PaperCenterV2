@@ -92,6 +92,7 @@ final class Page {
     ///   - newPageNumber: New page number within the bundle
     /// - Returns: True if a new version was created
     @discardableResult
+    @MainActor
     func updateReference(to newBundle: PDFBundle, pageNumber newPageNumber: Int) -> Bool {
         // Check if this is actually a change
         let bundleChanged = newBundle.id != currentPDFBundleID

@@ -9,8 +9,7 @@ import Foundation
 import CoreGraphics
 import SwiftData
 
-@MainActor
-final class GlobalSearchService {
+nonisolated final class GlobalSearchService {
     private let modelContext: ModelContext
 
     init(modelContext: ModelContext) {
@@ -341,7 +340,7 @@ final class GlobalSearchService {
         )
         var snapshotValues: [UUID: [CandidateVariableValue]] = [:]
         for version in versions {
-            let snapshot = try? version.decodeMetadataSnapshot()
+            let snapshot = decodeMetadataSnapshot(from: version.metadataSnapshot)
             let values = snapshotVariableValues(from: snapshot)
             snapshotValues = merge(snapshotValues, values)
         }
@@ -407,7 +406,7 @@ final class GlobalSearchService {
             dateValue: { $0.dateValue }
         )
 
-        let snapshot = try? version.decodeMetadataSnapshot()
+        let snapshot = decodeMetadataSnapshot(from: version.metadataSnapshot)
         let snapshotTagInfo = snapshotTagInfo(from: snapshot, tagByID: context.tagByID)
         let snapshotValues = snapshotVariableValues(from: snapshot)
 
@@ -459,7 +458,7 @@ final class GlobalSearchService {
         docPageNumber: Int,
         context: BuildContext
     ) -> SearchCandidate? {
-        guard let snapshot = try? version.decodeMetadataSnapshot() else {
+        guard let snapshot = decodeMetadataSnapshot(from: version.metadataSnapshot) else {
             return nil
         }
 
@@ -502,6 +501,13 @@ final class GlobalSearchService {
             tagNames: snapshotTagInfo.names,
             variableValues: snapshotValues
         )
+    }
+
+    private func decodeMetadataSnapshot(from data: Data?) -> MetadataSnapshot? {
+        guard let data else {
+            return nil
+        }
+        return try? JSONDecoder().decode(MetadataSnapshot.self, from: data)
     }
 
     private func buildNoteCandidate(
@@ -1111,14 +1117,14 @@ final class GlobalSearchService {
         Calendar.current.startOfDay(for: date)
     }
 
-    private static func normalize(_ value: String) -> String {
+    nonisolated private static func normalize(_ value: String) -> String {
         value
             .folding(options: [.diacriticInsensitive, .widthInsensitive, .caseInsensitive], locale: .current)
             .lowercased()
             .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    private static func tokenize(_ normalized: String) -> [String] {
+    nonisolated private static func tokenize(_ normalized: String) -> [String] {
         if normalized.isEmpty {
             return []
         }
@@ -1142,7 +1148,7 @@ final class GlobalSearchService {
     }()
 }
 
-private struct BuildContext {
+nonisolated private struct BuildContext {
     let tagByID: [UUID: Tag]
     let variableByID: [UUID: Variable]
     let bundleByID: [UUID: PDFBundle]
@@ -1151,14 +1157,14 @@ private struct BuildContext {
     let options: GlobalSearchOptions
 }
 
-private enum CandidateVariableValue: Hashable {
+nonisolated private enum CandidateVariableValue: Hashable {
     case int(Int)
     case list(String)
     case text(String)
     case date(Date)
 }
 
-private struct SearchCandidate {
+nonisolated private struct SearchCandidate {
     let kind: GlobalSearchResultKind
     let docID: UUID
     let docTitle: String

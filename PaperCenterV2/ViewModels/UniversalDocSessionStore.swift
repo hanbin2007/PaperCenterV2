@@ -3,15 +3,12 @@
 //  PaperCenterV2
 //
 //  Session-local state holder for UniversalDoc Viewer.
-//
 
 import Foundation
 
 @MainActor
-@Observable
-final class UniversalDocSessionStore {
+@Observable final class UniversalDocSessionStore {
     let session: UniversalDocSession
-
     var currentPageIndex: Int = 0
     private(set) var focusedLogicalPageID: UUID?
 
@@ -64,6 +61,7 @@ final class UniversalDocSessionStore {
     }
 
     func setFocusedPage(_ logicalPageID: UUID) {
+        guard focusedLogicalPageID != logicalPageID else { return } // Prevent duplicate triggers!
         guard slot(for: logicalPageID) != nil else { return }
         focusedLogicalPageID = logicalPageID
         if let index = session.slots.firstIndex(where: { $0.id == logicalPageID }) {
@@ -86,7 +84,6 @@ final class UniversalDocSessionStore {
             guard let selectedVersion = slot.versionOptions.first(where: { $0.id == selectedVersionID }) else {
                 continue
             }
-
             let available = dataProvider.availableSources(for: selectedVersion)
             if available.contains(source) {
                 sourceByLogicalPageID[slot.id] = source
@@ -100,6 +97,7 @@ final class UniversalDocSessionStore {
 
     func navigate(to index: Int) {
         guard index >= 0, index < session.slots.count else { return }
+        guard currentPageIndex != index else { return } // Prevent duplicate triggers!
         currentPageIndex = index
         focusedLogicalPageID = session.slots[index].id
     }
@@ -131,7 +129,6 @@ final class UniversalDocSessionStore {
                 sourceByLogicalPageID[slot.id] = selectedSource
             }
         }
-
         guard let fallbackLogicalPageID,
               let index = session.slots.firstIndex(where: { $0.id == fallbackLogicalPageID }) else {
             if let first = session.slots.first {

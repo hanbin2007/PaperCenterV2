@@ -200,16 +200,18 @@ final class PDFImportService {
             let bundleID = targetBundle.id
             let useVisionOCR = OCRSettings.shared.isVisionOCREnabled
             let language = OCRSettings.shared.ocrLanguage
+            let container = modelContext.container
 
             // Set initial status
             targetBundle.ocrExtractionStatus = "inProgress"
             targetBundle.ocrExtractionProgress = 0.0
 
-            Task.detached { [modelContext] in
+            Task.detached {
+                let backgroundContext = ModelContext(container)
                 await Self.extractOCRText(
                     bundleID: bundleID,
                     pdfURL: targetURL,
-                    modelContext: modelContext,
+                    modelContext: backgroundContext,
                     useVisionOCR: useVisionOCR,
                     language: language
                 )

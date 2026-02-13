@@ -71,6 +71,7 @@ final class PageVersion {
     // MARK: - Helper Methods
 
     /// Create metadata snapshot from current Page state
+    @MainActor
     static func createMetadataSnapshot(
         tags: [Tag]?,
         variableAssignments: [PageVariableAssignment]?
@@ -91,11 +92,13 @@ final class PageVersion {
     }
 
     /// Encode metadata snapshot from explicit IDs/values.
+    @MainActor
     static func encodeMetadataSnapshot(_ snapshot: MetadataSnapshot) throws -> Data {
         try JSONEncoder().encode(snapshot)
     }
 
     /// Decode metadata snapshot
+    @MainActor
     func decodeMetadataSnapshot() throws -> MetadataSnapshot? {
         guard let data = metadataSnapshot else { return nil }
         return try JSONDecoder().decode(MetadataSnapshot.self, from: data)
@@ -105,7 +108,7 @@ final class PageVersion {
 // MARK: - Supporting Types
 
 /// Codable representation of metadata at a point in time
-struct MetadataSnapshot: Codable {
+nonisolated struct MetadataSnapshot: Codable, Sendable {
     /// IDs of tags that were applied
     let tagIDs: [UUID]
 
@@ -114,7 +117,7 @@ struct MetadataSnapshot: Codable {
 }
 
 /// Codable representation of a variable assignment
-struct VariableAssignmentSnapshot: Codable {
+nonisolated struct VariableAssignmentSnapshot: Codable, Sendable {
     /// Variable ID
     let variableID: UUID
 

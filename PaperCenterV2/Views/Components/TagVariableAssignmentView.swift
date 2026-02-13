@@ -74,10 +74,12 @@ struct TagVariableAssignmentView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             searchField
-            Section(header: tagSectionHeader) {
+            VStack(alignment: .leading, spacing: 10) {
+                tagSectionHeader
                 tagsSection
             }
-            Section(header: variableSectionHeader) {
+            VStack(alignment: .leading, spacing: 10) {
+                variableSectionHeader
                 variableSelectionSection
             }
             statusRow
@@ -164,7 +166,6 @@ struct TagVariableAssignmentView: View {
 
     private var variableSelectionSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            header(title: "Select Variables")
             LazyVGrid(columns: adaptiveColumns, spacing: 10) {
                 ForEach(filteredVariables) { variable in
                     VariableSelectChip(
@@ -419,11 +420,11 @@ private struct TagCapsule: View {
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
-            .background((Color(hex: tag.color) ?? .blue).opacity(0.12))
-            .foregroundStyle(Color(hex: tag.color) ?? .blue)
+            .background(Color(hex: tag.color).opacity(0.12))
+            .foregroundStyle(Color(hex: tag.color))
             .overlay(
                 Capsule()
-                    .stroke((Color(hex: tag.color) ?? .blue).opacity(0.3), lineWidth: 1)
+                    .stroke((Color(hex: tag.color)).opacity(0.3), lineWidth: 1)
             )
             .clipShape(Capsule())
         }
@@ -487,15 +488,15 @@ private struct VariableSelectChip: View {
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
-            .background((Color(hex: variable.color) ?? .purple).opacity(0.08))
+            .background(Color(hex: variable.color).opacity(0.08))
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke((Color(hex: variable.color) ?? .purple).opacity(isSelected ? 0.5 : 0.25), lineWidth: isSelected ? 1.2 : 1)
+                    .stroke(Color(hex: variable.color).opacity(isSelected ? 0.5 : 0.25), lineWidth: isSelected ? 1.2 : 1)
             )
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
-        .foregroundStyle(Color(hex: variable.color) ?? .primary)
+        .foregroundStyle(Color(hex: variable.color))
     }
 }
 
@@ -508,7 +509,7 @@ private struct VariableListRow: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 Circle()
-                    .fill(Color(hex: variable.color) ?? .purple)
+                    .fill(Color(hex: variable.color))
                     .frame(width: 8, height: 8)
                 Text(variable.name)
                     .font(.callout)
@@ -531,7 +532,7 @@ private struct VariableListRow: View {
             } label: {
                 HStack {
                     Text(selected ?? "Select")
-                        .foregroundStyle(selected == nil ? .secondary : (Color(hex: variable.color) ?? .primary))
+                        .foregroundStyle(selected == nil ? .secondary : (Color(hex: variable.color)))
                     Spacer()
                     Image(systemName: "chevron.up.chevron.down")
                         .font(.caption)
@@ -539,10 +540,10 @@ private struct VariableListRow: View {
                 }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background((Color(hex: variable.color) ?? .purple).opacity(0.08))
+                .background(Color(hex: variable.color).opacity(0.08))
                 .overlay(
                     Capsule()
-                        .stroke((Color(hex: variable.color) ?? .purple).opacity(0.25), lineWidth: 1)
+                        .stroke((Color(hex: variable.color)).opacity(0.25), lineWidth: 1)
                 )
                 .clipShape(Capsule())
             }
@@ -572,7 +573,7 @@ private struct VariableIntRow: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 Circle()
-                    .fill(Color(hex: variable.color) ?? .purple)
+                    .fill(Color(hex: variable.color))
                     .frame(width: 8, height: 8)
                 Text(variable.name)
                     .font(.subheadline)
@@ -582,7 +583,7 @@ private struct VariableIntRow: View {
             HStack {
                 TextField("Value", text: $textValue)
                     .keyboardType(.numberPad)
-                    .onChange(of: textValue) { newValue in
+                    .onChange(of: textValue) { _, newValue in
                         let cleaned = Int(newValue)
                         onChange(cleaned)
                     }
@@ -601,7 +602,7 @@ private struct VariableIntRow: View {
         .padding(10)
         .background(.thinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 12))
-        .onChange(of: value) { newValue in
+        .onChange(of: value) { _, newValue in
             textValue = newValue.map(String.init) ?? ""
         }
     }
@@ -625,7 +626,7 @@ private struct VariableTextRow: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 Circle()
-                    .fill(Color(hex: variable.color) ?? .purple)
+                    .fill(Color(hex: variable.color))
                     .frame(width: 8, height: 8)
                 Text(variable.name)
                     .font(.subheadline)
@@ -634,7 +635,7 @@ private struct VariableTextRow: View {
 
             TextField("Enter text", text: $textValue)
                 .textFieldStyle(.roundedBorder)
-                .onChange(of: textValue) { newValue in
+                .onChange(of: textValue) { _, newValue in
                     onChange(newValue)
                 }
 
@@ -649,7 +650,7 @@ private struct VariableTextRow: View {
         .padding(10)
         .background(.thinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 12))
-        .onChange(of: value) { newValue in
+        .onChange(of: value) { _, newValue in
             textValue = newValue ?? ""
         }
     }
@@ -675,7 +676,7 @@ private struct VariableDateRow: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 Circle()
-                    .fill(Color(hex: variable.color) ?? .purple)
+                    .fill(Color(hex: variable.color))
                     .frame(width: 8, height: 8)
                 Text(variable.name)
                     .font(.subheadline)
@@ -683,7 +684,7 @@ private struct VariableDateRow: View {
             }
 
             Toggle("Assign Date", isOn: $hasValue)
-                .onChange(of: hasValue) { newValue in
+                .onChange(of: hasValue) { _, newValue in
                     if newValue {
                         onChange(selection)
                     } else {
@@ -699,7 +700,7 @@ private struct VariableDateRow: View {
             )
             .labelsHidden()
             .disabled(!hasValue)
-            .onChange(of: selection) { newValue in
+            .onChange(of: selection) { _, newValue in
                 if hasValue {
                     onChange(newValue)
                 }
@@ -720,7 +721,7 @@ private struct VariableDateRow: View {
         .padding(10)
         .background(.thinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 12))
-        .onChange(of: value) { newValue in
+        .onChange(of: value) { _, newValue in
             if let newValue {
                 selection = newValue
                 hasValue = true

@@ -2,13 +2,11 @@
 //  PDFBundleListView.swift
 //  PaperCenterV2
 //
-//  Created by Claude on 2025-11-09.
-//
 
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 
-/// Main list view for PDFBundles
 struct PDFBundleListView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \PDFBundle.createdAt, order: .reverse) private var bundles: [PDFBundle]
@@ -16,6 +14,10 @@ struct PDFBundleListView: View {
     @State private var viewModel: PDFBundleListViewModel?
     @State private var showingImport = false
     @State private var selectedBundleForDoc: PDFBundle?
+
+    @State private var bundleToAddPDF: PDFBundle?
+    @State private var activeAddPDFType: PDFType?
+    @State private var isFileImporterPresented = false
 
     var body: some View {
         NavigationStack {
@@ -39,7 +41,7 @@ struct PDFBundleListView: View {
                             }
 
                             Button {
-                                // TODO: Add PDFs to existing bundle
+                                bundleToAddPDF = bundle
                             } label: {
                                 Label("Add PDFs", systemImage: "plus.circle")
                             }
@@ -47,7 +49,7 @@ struct PDFBundleListView: View {
                             Divider()
 
                             Button(role: .destructive) {
-                                deleteBundle(bundle)
+                                try? viewModel?.deleteBundle(bundle)
                             } label: {
                                 Label("Delete", systemImage: "trash")
                             }
@@ -71,22 +73,55 @@ struct PDFBundleListView: View {
             .sheet(item: $selectedBundleForDoc) { bundle in
                 DocCreationView(bundle: bundle)
             }
+            .confirmationDialog(
+                "Add PDF Variant",
+                isPresented: Binding(
+                    get: { bundleToAddPDF != nil && !isFileImporterPresented },
+                    set: { if !$0 { bundleToAddPDF = nil } }
+                ),
+                presenting: bundleToAddPDF
+            ) { bundle in
+                if bundle.displayPDFPath == nil {
+                    Button("Display PDF") {
+                        activeAddPDFType = .display
+                        isFileImporterPresented = true
+                    }
+                }
+                if bundle.ocrPDFPath == nil {
+                    Button("OCR PDF") {
+                        activeAddPDFType = .ocr
+                        isFileImporterPresented = true
+                    }
+                }
+                if bundle.originalPDFPath == nil {
+                    Button("Original PDF") {
+                        activeAddPDFType = .original
+                        isFileImporterPresented = true
+                    }
+                }
+            } message: { _ in
+                Text("Select the type of PDF to add to this bundle")
+            }
+            .fileImporter(
+                isPresented: $isFileImporterPresented,
+                allowedContentTypes: [.pdf],
+                allowsMultipleSelection: false
+            ) { result in
+                guard let type = activeAddPDFType, let bundle = bundleToAddPDF else { return }
+                activeAddPDFType = nil
+                bundleToAddPDF = nil
+
+                if case .success(let urls) = result, let url = urls.first {
+                    Task {
+                        try? await viewModel?.addPDF(from: url, type: type, to: bundle)
+                    }
+                }
+            }
             .onAppear {
                 if viewModel == nil {
                     viewModel = PDFBundleListViewModel(modelContext: modelContext)
                 }
             }
-        }
-    }
-
-    private func deleteBundle(_ bundle: PDFBundle) {
-        guard let viewModel = viewModel else { return }
-
-        do {
-            try viewModel.deleteBundle(bundle)
-        } catch {
-            // TODO: Show error alert
-            print("Error deleting bundle: \(error)")
         }
     }
 }
