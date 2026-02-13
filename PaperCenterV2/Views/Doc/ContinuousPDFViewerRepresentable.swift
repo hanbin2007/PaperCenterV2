@@ -24,6 +24,7 @@ struct ContinuousPDFViewerRepresentable: UIViewRepresentable {
     let entries: [ComposedPDFPageEntry]
     let jumpToComposedPageIndex: Int?
     let jumpRequestID: Int
+    let focusRequestID: Int
 
     let noteAnchors: [NoteAnchorOverlayItem]
     let pageTagItems: [PageTagOverlayItem]
@@ -86,7 +87,7 @@ struct ContinuousPDFViewerRepresentable: UIViewRepresentable {
             context.coordinator.jump(to: jumpToComposedPageIndex)
         }
 
-        context.coordinator.focus(on: focusAnchor)
+        context.coordinator.focus(on: focusAnchor, requestID: focusRequestID)
     }
 
     final class Coordinator: NSObject {
@@ -111,6 +112,7 @@ struct ContinuousPDFViewerRepresentable: UIViewRepresentable {
         private var zoomScaleObserver: NSKeyValueObservation?
         private var lastFocusedNoteID: UUID?
         fileprivate var lastHandledJumpRequestID: Int?
+        private var lastHandledFocusRequestID: Int?
 
         init(_ parent: ContinuousPDFViewerRepresentable) {
             self.parent = parent
@@ -260,18 +262,21 @@ struct ContinuousPDFViewerRepresentable: UIViewRepresentable {
             overlay.refresh()
         }
 
-        func focus(on anchor: NoteAnchorOverlayItem?) {
+        func focus(on anchor: NoteAnchorOverlayItem?, requestID: Int) {
             guard let pdfView else { return }
 
             guard let anchor else {
                 lastFocusedNoteID = nil
+                lastHandledFocusRequestID = requestID
                 return
             }
 
-            if lastFocusedNoteID == anchor.id {
+            if lastFocusedNoteID == anchor.id,
+               lastHandledFocusRequestID == requestID {
                 return
             }
             lastFocusedNoteID = anchor.id
+            lastHandledFocusRequestID = requestID
 
             guard let document = pdfView.document,
                   anchor.composedPageIndex >= 0,

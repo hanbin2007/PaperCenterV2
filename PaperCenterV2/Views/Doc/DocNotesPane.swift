@@ -14,6 +14,7 @@ struct DocNotesPane: View {
     let pageSectionTitles: [UUID: String]
     let isVisible: Bool
     let isEditable: Bool
+    let onNoteTapped: ((UUID) -> Void)?
 
     @State private var composer: NoteComposer?
     @State private var metadataEditor: NoteMetadataEditor?
@@ -180,7 +181,11 @@ struct DocNotesPane: View {
         let note = item.note
         return VStack(alignment: .leading, spacing: 6) {
             Button {
+                let wasSelected = viewModel.selectedNoteID == note.id
                 viewModel.selectedNoteID = note.id
+                if wasSelected {
+                    onNoteTapped?(note.id)
+                }
             } label: {
                 HStack(alignment: .top, spacing: 8) {
                     if item.depth > 0 {

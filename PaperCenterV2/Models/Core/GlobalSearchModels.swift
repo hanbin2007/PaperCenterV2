@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import CoreGraphics
 
 enum GlobalSearchField: String, CaseIterable, Codable, Hashable, Identifiable {
     case docTitle
@@ -317,6 +318,12 @@ struct DocViewerLaunchContext: Hashable, Codable {
     }
 }
 
+struct NotePreviewContext: Hashable {
+    let bundleID: UUID
+    let pageNumber: Int
+    let normalizedRect: CGRect
+}
+
 struct GlobalSearchResult: Identifiable, Hashable {
     let id: String
     let kind: GlobalSearchResultKind
@@ -330,6 +337,8 @@ struct GlobalSearchResult: Identifiable, Hashable {
     let logicalPageID: UUID?
     let pageVersionID: UUID?
     let noteID: UUID?
+    let docPageNumber: Int?
+    let notePreview: NotePreviewContext?
 
     let title: String
     let subtitle: String

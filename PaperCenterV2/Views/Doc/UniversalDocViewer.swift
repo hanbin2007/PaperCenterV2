@@ -109,6 +109,7 @@ struct UniversalDocViewer: View {
     @State private var noteInteractionMode: NoteInteractionMode = .view
     @State private var loadedNotesSignature = ""
     @State private var pendingInitialNoteID: UUID?
+    @State private var noteFocusRequestID = 0
 
     @State private var notesViewModel: DocNotesEditorViewModel?
 
@@ -399,6 +400,10 @@ struct UniversalDocViewer: View {
                 isNoteCreateMode = false
             }
         }
+        .onChange(of: notesViewModel?.selectedNoteID) { _, noteID in
+            guard let noteID else { return }
+            focus(noteID: noteID, force: true)
+        }
     }
 
     private var contentLayout: some View {
@@ -655,6 +660,7 @@ struct UniversalDocViewer: View {
             entries: composedPDFEntries,
             jumpToComposedPageIndex: pendingJumpComposedIndex,
             jumpRequestID: jumpRequestID,
+            focusRequestID: noteFocusRequestID,
             noteAnchors: noteAnchors,
             pageTagItems: pageTagItems,
             selectedNoteID: selectedNoteID,
@@ -761,7 +767,10 @@ struct UniversalDocViewer: View {
                                 pageVersionIDs: currentNotesPageVersionIDs,
                                 pageSectionTitles: currentNotesPageSectionTitles,
                                 isVisible: !isOCRMode,
-                                isEditable: canEditNotes
+                                isEditable: canEditNotes,
+                                onNoteTapped: { noteID in
+                                    focus(noteID: noteID, force: true)
+                                }
                             )
                         } else {
                             ProgressView()
@@ -800,7 +809,10 @@ struct UniversalDocViewer: View {
                         pageVersionIDs: currentNotesPageVersionIDs,
                         pageSectionTitles: currentNotesPageSectionTitles,
                         isVisible: !isOCRMode,
-                        isEditable: canEditNotes
+                        isEditable: canEditNotes,
+                        onNoteTapped: { noteID in
+                            focus(noteID: noteID, force: true)
+                        }
                     )
                     .frame(maxHeight: 280)
                 } else {
@@ -870,6 +882,23 @@ struct UniversalDocViewer: View {
         jumpRequestID &+= 1
     }
 
+    private func focus(noteID: UUID, force: Bool) {
+        guard let notesViewModel,
+              let note = notesViewModel.noteIndex[noteID],
+              let composedIndex = composedIndexByPageVersionID[note.pageVersionID],
+              composedIndex >= 0,
+              composedIndex < composedPDFEntries.count else {
+            return
+        }
+
+        let logicalPageID = composedPDFEntries[composedIndex].logicalPageID
+        store.setFocusedPage(logicalPageID)
+        if force || focusedComposedIndex != composedIndex {
+            requestJump(to: composedIndex)
+        }
+        noteFocusRequestID &+= 1
+    }
+
     private func handleFocusedComposedIndex(_ composedIndex: Int) {
         guard composedIndex >= 0, composedIndex < composedPDFEntries.count else { return }
         let logicalPageID = composedPDFEntries[composedIndex].logicalPageID
@@ -913,16 +942,16 @@ struct UniversalDocViewer: View {
     private func applyInitialNoteSelectionIfPossible() {
         guard let pendingInitialNoteID,
               let notesViewModel,
-              let note = notesViewModel.noteIndex[pendingInitialNoteID],
-              let composedIndex = composedIndexByPageVersionID[note.pageVersionID] else {
+              notesViewModel.noteIndex[pendingInitialNoteID] != nil else {
             return
         }
 
         notesViewModel.selectedNoteID = pendingInitialNoteID
-        if composedIndex >= 0, composedIndex < composedPDFEntries.count {
-            let logicalPageID = composedPDFEntries[composedIndex].logicalPageID
-            store.setFocusedPage(logicalPageID)
-            requestJump(to: composedIndex)
+        focus(noteID: pendingInitialNoteID, force: true)
+        // Run a second pass on next runloop so initial search navigation still jumps
+        // even if PDFView/layout finishes one frame later.
+        DispatchQueue.main.async {
+            focus(noteID: pendingInitialNoteID, force: true)
         }
         self.pendingInitialNoteID = nil
     }

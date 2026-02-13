@@ -363,6 +363,65 @@ final class GlobalSearchServiceTests: XCTestCase {
         XCTAssertTrue(results.allSatisfy { $0.kind == .noteHit })
     }
 
+    func testNoteHitResolvesLogicalPageWithHistoricalVersionExcluded() throws {
+        try skipIfNeeded()
+        let container = try makeInMemoryContainer()
+        let context = ModelContext(container)
+
+        let bundle = PDFBundle(name: "Legacy Bundle")
+        let doc = Doc(title: "Legacy Doc")
+        let group = PageGroup(title: "Legacy Group", doc: doc)
+        doc.addPageGroup(group)
+
+        let page = Page(pdfBundle: bundle, pageNumber: 1, pageGroup: group)
+        group.addPage(page)
+        _ = page.updateReference(to: bundle, pageNumber: 2)
+
+        guard let historicalVersion = page.versions?.first(where: { $0.pageNumber == 1 }) else {
+            XCTFail("Expected historical version")
+            return
+        }
+
+        let note = NoteBlock.createNormalized(
+            pageVersion: historicalVersion,
+            absoluteRect: CGRect(x: 20, y: 24, width: 72, height: 36),
+            pageSize: CGSize(width: 200, height: 300),
+            title: "Legacy Note",
+            body: "legacy-note-keyword"
+        )
+
+        // Simulate older records that do not carry cached page/doc IDs.
+        note.pageId = nil
+        note.docId = nil
+
+        context.insert(bundle)
+        context.insert(doc)
+        context.insert(group)
+        context.insert(page)
+        context.insert(note)
+        try context.save()
+
+        let service = GlobalSearchService(modelContext: context)
+        var options = baseOptions(resultTypes: [.noteHit])
+        options.fieldScope = [.noteTitleBody]
+        options.includeHistoricalVersions = false
+
+        let results = service.search(query: "legacy-note-keyword", options: options)
+
+        XCTAssertEqual(results.count, 1)
+        let result = try XCTUnwrap(results.first)
+        XCTAssertEqual(result.kind, .noteHit)
+        XCTAssertEqual(result.logicalPageID, page.id)
+        XCTAssertEqual(result.pageVersionID, historicalVersion.id)
+        XCTAssertEqual(result.noteID, note.id)
+        XCTAssertEqual(result.docPageNumber, 1)
+        XCTAssertEqual(result.notePreview?.bundleID, bundle.id)
+        XCTAssertEqual(result.notePreview?.pageNumber, historicalVersion.pageNumber)
+        XCTAssertEqual(result.launchContext.logicalPageID, page.id)
+        XCTAssertEqual(result.launchContext.preferredVersionID, historicalVersion.id)
+        XCTAssertEqual(result.launchContext.preferredNoteID, note.id)
+    }
+
     private func makeFixture() throws -> Fixture {
         let container = try makeInMemoryContainer()
         let context = ModelContext(container)

@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import CoreGraphics
 import SwiftData
 
 @MainActor
@@ -52,24 +53,48 @@ final class GlobalSearchService {
 
             var candidates: [SearchCandidate] = []
             var pageByID: [UUID: Page] = [:]
-            var pageByVersionID: [UUID: Page] = [:]
+            var pageByAnyVersionID: [UUID: Page] = [:]
+            var versionByID: [UUID: PageVersion] = [:]
+            var docPageNumberByPageID: [UUID: Int] = [:]
             var docByID: [UUID: Doc] = [:]
 
             for doc in docs {
                 docByID[doc.id] = doc
-                candidates.append(buildDocCandidate(doc: doc, context: context))
+                let allPages = doc.allPages
+                candidates.append(
+                    buildDocCandidate(
+                        doc: doc,
+                        defaultLogicalPageID: allPages.first?.id,
+                        defaultDocPageNumber: allPages.isEmpty ? nil : 1,
+                        context: context
+                    )
+                )
+
+                var docPageNumber = 0
 
                 for pageGroup in doc.orderedPageGroups {
+                    let orderedPages = pageGroup.orderedPages
+                    let groupStartPageNumber = orderedPages.isEmpty ? nil : (docPageNumber + 1)
                     candidates.append(
                         buildPageGroupCandidate(
                             doc: doc,
                             pageGroup: pageGroup,
+                            logicalPageID: orderedPages.first?.id,
+                            docPageNumber: groupStartPageNumber,
                             context: context
                         )
                     )
 
-                    for page in pageGroup.orderedPages {
+                    for page in orderedPages {
+                        docPageNumber += 1
+                        docPageNumberByPageID[page.id] = docPageNumber
                         pageByID[page.id] = page
+
+                        for version in page.versions ?? [] {
+                            pageByAnyVersionID[version.id] = page
+                            versionByID[version.id] = version
+                        }
+
                         let versions = filteredVersions(for: page, includeHistorical: options.includeHistoricalVersions)
 
                         candidates.append(
@@ -78,18 +103,18 @@ final class GlobalSearchService {
                                 pageGroup: pageGroup,
                                 page: page,
                                 versions: versions,
+                                docPageNumber: docPageNumber,
                                 context: context
                             )
                         )
 
                         for version in versions {
-                            pageByVersionID[version.id] = page
-
                             if let ocrCandidate = buildOCRCandidate(
                                 doc: doc,
                                 pageGroup: pageGroup,
                                 page: page,
                                 version: version,
+                                docPageNumber: docPageNumber,
                                 context: context
                             ) {
                                 candidates.append(ocrCandidate)
@@ -100,6 +125,7 @@ final class GlobalSearchService {
                                 pageGroup: pageGroup,
                                 page: page,
                                 version: version,
+                                docPageNumber: docPageNumber,
                                 context: context
                             ) {
                                 candidates.append(metadataCandidate)
@@ -114,7 +140,9 @@ final class GlobalSearchService {
                     note: note,
                     docByID: docByID,
                     pageByID: pageByID,
-                    pageByVersionID: pageByVersionID,
+                    pageByVersionID: pageByAnyVersionID,
+                    versionByID: versionByID,
+                    docPageNumberByPageID: docPageNumberByPageID,
                     context: context
                 ) else {
                     continue
@@ -171,6 +199,8 @@ final class GlobalSearchService {
                     logicalPageID: candidate.logicalPageID,
                     pageVersionID: candidate.pageVersionID,
                     noteID: candidate.noteID,
+                    docPageNumber: candidate.docPageNumber,
+                    notePreview: candidate.notePreview,
                     title: candidate.title,
                     subtitle: candidate.subtitle,
                     snippet: candidate.snippet
@@ -194,7 +224,12 @@ final class GlobalSearchService {
         }
     }
 
-    private func buildDocCandidate(doc: Doc, context: BuildContext) -> SearchCandidate {
+    private func buildDocCandidate(
+        doc: Doc,
+        defaultLogicalPageID: UUID?,
+        defaultDocPageNumber: Int?,
+        context: BuildContext
+    ) -> SearchCandidate {
         let tagInfo = tagInfo(from: doc.tags, tagByID: context.tagByID)
         let variableValues = variableValues(
             from: doc.variableAssignments,
@@ -222,9 +257,11 @@ final class GlobalSearchService {
             docTitle: doc.title,
             pageGroupID: nil,
             pageGroupTitle: nil,
-            logicalPageID: doc.allPages.first?.id,
+            logicalPageID: defaultLogicalPageID,
             pageVersionID: nil,
             noteID: nil,
+            docPageNumber: defaultDocPageNumber,
+            notePreview: nil,
             title: doc.title,
             subtitle: "Document",
             snippet: makeSnippet(from: [doc.title] + tagInfo.names + variableText.values),
@@ -239,6 +276,8 @@ final class GlobalSearchService {
     private func buildPageGroupCandidate(
         doc: Doc,
         pageGroup: PageGroup,
+        logicalPageID: UUID?,
+        docPageNumber: Int?,
         context: BuildContext
     ) -> SearchCandidate {
         let tagInfo = tagInfo(from: pageGroup.tags, tagByID: context.tagByID)
@@ -267,9 +306,11 @@ final class GlobalSearchService {
             docTitle: doc.title,
             pageGroupID: pageGroup.id,
             pageGroupTitle: pageGroup.title,
-            logicalPageID: pageGroup.orderedPages.first?.id,
+            logicalPageID: logicalPageID,
             pageVersionID: nil,
             noteID: nil,
+            docPageNumber: docPageNumber,
+            notePreview: nil,
             title: pageGroup.title,
             subtitle: doc.title,
             snippet: makeSnippet(from: tagInfo.names + variableText.values),
@@ -286,6 +327,7 @@ final class GlobalSearchService {
         pageGroup: PageGroup,
         page: Page,
         versions: [PageVersion],
+        docPageNumber: Int,
         context: BuildContext
     ) -> SearchCandidate {
         let tagInfo = tagInfo(from: page.tags, tagByID: context.tagByID)
@@ -314,6 +356,10 @@ final class GlobalSearchService {
         append(contentsOf: tagInfo.names, to: &textByField, field: .tagName)
         append(contentsOf: variableText.names, to: &textByField, field: .variableName)
         append(contentsOf: variableText.values, to: &textByField, field: .variableValue)
+        let preferredVersionID = versions.first(where: { version in
+            version.pdfBundleID == page.currentPDFBundleID &&
+            version.pageNumber == page.currentPageNumber
+        })?.id ?? page.latestVersion?.id
 
         return SearchCandidate(
             kind: .page,
@@ -322,9 +368,11 @@ final class GlobalSearchService {
             pageGroupID: pageGroup.id,
             pageGroupTitle: pageGroup.title,
             logicalPageID: page.id,
-            pageVersionID: page.latestVersion?.id,
+            pageVersionID: preferredVersionID,
             noteID: nil,
-            title: "Page \(page.currentPageNumber)",
+            docPageNumber: docPageNumber,
+            notePreview: nil,
+            title: "Page \(docPageNumber)",
             subtitle: "\(doc.title) · \(pageGroup.title)",
             snippet: makeSnippet(from: tagInfo.names + variableText.values),
             sortDate: page.updatedAt,
@@ -340,6 +388,7 @@ final class GlobalSearchService {
         pageGroup: PageGroup,
         page: Page,
         version: PageVersion,
+        docPageNumber: Int,
         context: BuildContext
     ) -> SearchCandidate? {
         guard let bundle = context.bundleByID[version.pdfBundleID],
@@ -389,7 +438,9 @@ final class GlobalSearchService {
             logicalPageID: page.id,
             pageVersionID: version.id,
             noteID: nil,
-            title: "OCR · Page \(version.pageNumber)",
+            docPageNumber: docPageNumber,
+            notePreview: nil,
+            title: "OCR · Page \(docPageNumber)",
             subtitle: "\(doc.title) · \(pageGroup.title)",
             snippet: makeSnippet(from: [ocrText]),
             sortDate: version.createdAt,
@@ -405,6 +456,7 @@ final class GlobalSearchService {
         pageGroup: PageGroup,
         page: Page,
         version: PageVersion,
+        docPageNumber: Int,
         context: BuildContext
     ) -> SearchCandidate? {
         guard let snapshot = try? version.decodeMetadataSnapshot() else {
@@ -439,7 +491,9 @@ final class GlobalSearchService {
             logicalPageID: page.id,
             pageVersionID: version.id,
             noteID: nil,
-            title: "Version Metadata · Page \(version.pageNumber)",
+            docPageNumber: docPageNumber,
+            notePreview: nil,
+            title: "Version Metadata · Page \(docPageNumber)",
             subtitle: "\(doc.title) · \(pageGroup.title)",
             snippet: makeSnippet(from: metadataText),
             sortDate: version.createdAt,
@@ -455,6 +509,8 @@ final class GlobalSearchService {
         docByID: [UUID: Doc],
         pageByID: [UUID: Page],
         pageByVersionID: [UUID: Page],
+        versionByID: [UUID: PageVersion],
+        docPageNumberByPageID: [UUID: Int],
         context: BuildContext
     ) -> SearchCandidate? {
         let resolvedPage = note.pageId.flatMap { pageByID[$0] } ?? pageByVersionID[note.pageVersionID]
@@ -486,8 +542,22 @@ final class GlobalSearchService {
         append(contentsOf: variableText.names, to: &textByField, field: .variableName)
         append(contentsOf: variableText.values, to: &textByField, field: .variableValue)
 
-        let pageLabel = resolvedPage.map { "Page \($0.currentPageNumber)" } ?? "Page"
+        let docPageNumber = resolvedPage.flatMap { docPageNumberByPageID[$0.id] }
+        let pageLabel = docPageNumber.map { "Page \($0)" } ?? "Page"
         let groupTitle = resolvedPage?.pageGroup?.title
+        let resolvedVersion = versionByID[note.pageVersionID]
+        let previewPageNumber = resolvedVersion?.pageNumber ?? max(note.pageIndexInBundle + 1, 1)
+        let previewBundleID = resolvedVersion?.pdfBundleID ?? note.pdfBundleId
+        let notePreview = NotePreviewContext(
+            bundleID: previewBundleID,
+            pageNumber: previewPageNumber,
+            normalizedRect: CGRect(
+                x: note.rectX,
+                y: note.rectY,
+                width: note.rectWidth,
+                height: note.rectHeight
+            )
+        )
 
         return SearchCandidate(
             kind: .noteHit,
@@ -498,6 +568,8 @@ final class GlobalSearchService {
             logicalPageID: resolvedPage?.id,
             pageVersionID: note.pageVersionID,
             noteID: note.id,
+            docPageNumber: docPageNumber,
+            notePreview: notePreview,
             title: note.title?.isEmpty == false ? note.title! : "Note",
             subtitle: "\(doc.title) · \(pageLabel)",
             snippet: makeSnippet(from: [note.body]),
@@ -850,6 +922,17 @@ final class GlobalSearchService {
         if phraseMatched {
             score += 120
         }
+
+        if matchedFields.contains(.tagName) {
+            switch candidate.kind {
+            case .noteHit:
+                score += 80
+            case .page, .ocrHit, .versionMetadataHit:
+                score += 60
+            case .doc, .pageGroup:
+                score -= 40
+            }
+        }
         return score
     }
 
@@ -1084,6 +1167,8 @@ private struct SearchCandidate {
     let logicalPageID: UUID?
     let pageVersionID: UUID?
     let noteID: UUID?
+    let docPageNumber: Int?
+    let notePreview: NotePreviewContext?
 
     let title: String
     let subtitle: String
