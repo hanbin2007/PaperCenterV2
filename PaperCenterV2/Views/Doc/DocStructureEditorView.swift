@@ -189,6 +189,9 @@ struct DocStructureEditorView: View {
                             } label: {
                                 Label("Add Page", systemImage: "plus.circle")
                                     .font(.subheadline)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .contentShape(Rectangle())
+                                    .padding(.vertical, 4)
                             }
                             .buttonStyle(.plain)
                             Spacer()

@@ -213,6 +213,8 @@ struct DocNotesPane: View {
                 .padding(8)
                 .background(viewModel.selectedNoteID == note.id ? Color.accentColor.opacity(0.12) : Color.clear)
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             

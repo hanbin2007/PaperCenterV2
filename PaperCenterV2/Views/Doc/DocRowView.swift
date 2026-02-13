@@ -54,6 +54,8 @@ struct DocRowView: View {
             .frame(height: thumbnailSize.height, alignment: .top)
         }
         .padding(.vertical, 6)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
         .task(id: doc.id) {
             await loadThumbnailIfNeeded()
         }

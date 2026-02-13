@@ -113,6 +113,9 @@ struct GlobalSearchFilterSheet: View {
                                     .foregroundStyle(.tint)
                             }
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                        .padding(.vertical, 4)
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("globalSearch.tag.\(tag.id.uuidString)")
@@ -403,6 +406,9 @@ private struct VariableRuleEditorRow: View {
                                     .foregroundStyle(.tint)
                             }
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                        .padding(.vertical, 4)
                     }
                     .buttonStyle(.plain)
                 }

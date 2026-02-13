@@ -957,6 +957,8 @@ struct UniversalDocViewer: View {
                 .padding(.horizontal)
                 .padding(.vertical, 10)
                 .background(.ultraThinMaterial)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             

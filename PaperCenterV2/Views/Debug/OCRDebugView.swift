@@ -168,6 +168,8 @@ private struct BundleRowView: View {
                 .foregroundColor(.secondary)
         }
         .padding(.vertical, 4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
     }
 }
 
@@ -351,6 +353,8 @@ private struct PageTextRowView: View {
                 .lineLimit(3)
         }
         .padding(.vertical, 4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
     }
 }
 
