@@ -103,19 +103,27 @@ struct ContinuousPDFViewerRepresentable: UIViewRepresentable {
 
         var parent: ContinuousPDFViewerRepresentable
         private weak var pdfView: PDFView?
+        private weak var scrollView: UIScrollView?
         private let overlay = NoteAnchorOverlayView()
         
-        private var signature: String?
+        private var signature: Int?
         private var pageEntryByComposedIndex: [Int: ComposedPDFPageEntry] = [:]
         private var pageByComposedIndex: [Int: PDFPage] = [:]
         
         private var pageChangedObserver: NSObjectProtocol?
         private var contentOffsetObserver: NSKeyValueObservation?
         private var zoomScaleObserver: NSKeyValueObservation?
+        private var isDraggingObserver: NSKeyValueObservation?
+        private var isDeceleratingObserver: NSKeyValueObservation?
         
         private var lastFocusedNoteID: UUID?
         fileprivate var lastHandledJumpRequestID: Int?
         private var lastHandledFocusRequestID: Int?
+        private var lastNotifiedComposedIndex: Int?
+        private var pendingNotifiedComposedIndex: Int?
+        private var hasScheduledFocusNotification = false
+        private var isScrollInteractionActive = false
+        private var pendingFocusedIndexDuringScroll: Int?
 
         init(_ parent: ContinuousPDFViewerRepresentable) {
             self.parent = parent
@@ -128,6 +136,8 @@ struct ContinuousPDFViewerRepresentable: UIViewRepresentable {
             }
             contentOffsetObserver?.invalidate()
             zoomScaleObserver?.invalidate()
+            isDraggingObserver?.invalidate()
+            isDeceleratingObserver?.invalidate()
         }
 
         func install(on pdfView: PDFView) {
@@ -163,14 +173,22 @@ struct ContinuousPDFViewerRepresentable: UIViewRepresentable {
             }
             
             if let scrollView = pdfView.subviews.compactMap({ $0 as? UIScrollView }).first {
+                self.scrollView = scrollView
                 scrollView.isPagingEnabled = false
                 scrollView.decelerationRate = .normal
                 
                 contentOffsetObserver = scrollView.observe(\.contentOffset, options: [.new]) { [weak self] _, _ in
+                    self?.updateScrollActivity(using: scrollView)
                     self?.overlay.scheduleRefresh()
                 }
                 zoomScaleObserver = scrollView.observe(\.zoomScale, options: [.new]) { [weak self] _, _ in
                     self?.overlay.scheduleRefresh()
+                }
+                isDraggingObserver = scrollView.observe(\.isDragging, options: [.initial, .new]) { [weak self] _, _ in
+                    self?.updateScrollActivity(using: scrollView)
+                }
+                isDeceleratingObserver = scrollView.observe(\.isDecelerating, options: [.new]) { [weak self] _, _ in
+                    self?.updateScrollActivity(using: scrollView)
                 }
             }
         }
@@ -213,6 +231,10 @@ struct ContinuousPDFViewerRepresentable: UIViewRepresentable {
             let previousViewport = captureViewportState(from: pdfView)
             
             signature = newSignature
+            lastNotifiedComposedIndex = nil
+            pendingNotifiedComposedIndex = nil
+            hasScheduledFocusNotification = false
+            pendingFocusedIndexDuringScroll = nil
             pageEntryByComposedIndex.removeAll()
             pageByComposedIndex.removeAll()
             
@@ -329,22 +351,58 @@ struct ContinuousPDFViewerRepresentable: UIViewRepresentable {
             let index = document.index(for: currentPage)
             guard index >= 0 else { return }
             
+            if isScrollInteractionActive {
+                pendingFocusedIndexDuringScroll = index
+                return
+            }
+            guard index != lastNotifiedComposedIndex else { return }
+            
             notifyFocusedComposedPageChanged(index)
             overlay.scheduleRefresh()
         }
 
         private func notifyFocusedComposedPageChanged(_ index: Int) {
+            pendingNotifiedComposedIndex = index
+            guard !hasScheduledFocusNotification else { return }
+            
+            hasScheduledFocusNotification = true
             DispatchQueue.main.async { [weak self] in
-                self?.parent.onFocusedComposedPageChanged(index)
+                guard let self else { return }
+                self.hasScheduledFocusNotification = false
+                
+                guard let resolvedIndex = self.pendingNotifiedComposedIndex else { return }
+                self.pendingNotifiedComposedIndex = nil
+                guard self.lastNotifiedComposedIndex != resolvedIndex else { return }
+                
+                self.lastNotifiedComposedIndex = resolvedIndex
+                self.parent.onFocusedComposedPageChanged(resolvedIndex)
             }
         }
 
-        private func makeSignature(_ entries: [ComposedPDFPageEntry]) -> String {
-            entries
-                .map { entry in
-                    "\(entry.logicalPageID.uuidString)|\(entry.pageVersionID.uuidString)|\(entry.fileURL.absoluteString)|\(entry.sourcePageNumber)"
-                }
-                .joined(separator: "#")
+        private func makeSignature(_ entries: [ComposedPDFPageEntry]) -> Int {
+            var hasher = Hasher()
+            hasher.combine(entries.count)
+            
+            for entry in entries {
+                hasher.combine(entry.logicalPageID)
+                hasher.combine(entry.pageVersionID)
+                hasher.combine(entry.fileURL)
+                hasher.combine(entry.sourcePageNumber)
+            }
+            
+            return hasher.finalize()
+        }
+
+        private func updateScrollActivity(using scrollView: UIScrollView) {
+            let active = scrollView.isTracking || scrollView.isDragging || scrollView.isDecelerating
+            guard active != isScrollInteractionActive else { return }
+            
+            isScrollInteractionActive = active
+            guard !active else { return }
+            
+            guard let pendingIndex = pendingFocusedIndexDuringScroll else { return }
+            pendingFocusedIndexDuringScroll = nil
+            notifyFocusedComposedPageChanged(pendingIndex)
         }
 
         private func captureViewportState(from pdfView: PDFView) -> ViewportState? {

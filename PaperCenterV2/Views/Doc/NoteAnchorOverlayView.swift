@@ -49,6 +49,8 @@ private final class InsetLabel: UILabel {
 private final class PageTagBadgeView: UIView {
     private let titleLabel = UILabel()
     private let chipsStack = UIStackView()
+    private var lastGroupTitle: String = ""
+    private var lastChips: [PageTagOverlayChip] = []
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -96,12 +98,25 @@ private final class PageTagBadgeView: UIView {
     
     func configure(groupTitle: String, chips: [PageTagOverlayChip]) {
         let trimmedGroup = groupTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmedGroup.isEmpty {
-            titleLabel.isHidden = true
-            titleLabel.text = nil
-        } else {
-            titleLabel.isHidden = false
-            titleLabel.text = trimmedGroup
+        let titleChanged = trimmedGroup != lastGroupTitle
+        let chipsChanged = chips != lastChips
+        
+        if titleChanged {
+            if trimmedGroup.isEmpty {
+                titleLabel.isHidden = true
+                titleLabel.text = nil
+            } else {
+                titleLabel.isHidden = false
+                titleLabel.text = trimmedGroup
+            }
+            lastGroupTitle = trimmedGroup
+        }
+        
+        guard chipsChanged else {
+            if titleChanged {
+                setNeedsLayout()
+            }
+            return
         }
         
         chipsStack.arrangedSubviews.forEach { view in
@@ -137,12 +152,18 @@ private final class PageTagBadgeView: UIView {
             moreLabel.text = "+\(overflow) more"
             chipsStack.addArrangedSubview(moreLabel)
         }
+        
+        lastChips = chips
+        setNeedsLayout()
     }
 }
 
 private final class NoteContentBubbleView: UIView {
     private let titleLabel = UILabel()
     private let bodyLabel = UILabel()
+    private var lastTitle: String?
+    private var lastBody: String = ""
+    private var lastSelected: Bool?
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -188,16 +209,27 @@ private final class NoteContentBubbleView: UIView {
     
     func configure(title: String?, body: String, selected: Bool) {
         let trimmedTitle = title?.trimmingCharacters(in: .whitespacesAndNewlines)
-        if let trimmedTitle, !trimmedTitle.isEmpty {
-            titleLabel.text = trimmedTitle
-            titleLabel.isHidden = false
-        } else {
-            titleLabel.text = nil
-            titleLabel.isHidden = true
+        let trimmedBody = body.trimmingCharacters(in: .whitespacesAndNewlines)
+        let resolvedBody = trimmedBody.isEmpty ? "Empty note" : trimmedBody
+        
+        if lastTitle != trimmedTitle {
+            if let trimmedTitle, !trimmedTitle.isEmpty {
+                titleLabel.text = trimmedTitle
+                titleLabel.isHidden = false
+            } else {
+                titleLabel.text = nil
+                titleLabel.isHidden = true
+            }
+            lastTitle = trimmedTitle
         }
         
-        let trimmedBody = body.trimmingCharacters(in: .whitespacesAndNewlines)
-        bodyLabel.text = trimmedBody.isEmpty ? "Empty note" : trimmedBody
+        if lastBody != resolvedBody {
+            bodyLabel.text = resolvedBody
+            lastBody = resolvedBody
+        }
+        
+        guard lastSelected != selected else { return }
+        lastSelected = selected
         
         backgroundColor = selected
             ? UIColor.systemOrange.withAlphaComponent(0.15)
@@ -271,7 +303,8 @@ final class NoteAnchorOverlayView: UIView, UIGestureRecognizerDelegate {
     private var bubbleViews: [UUID: NoteContentBubbleView] = [:]
     private var tagBadgeViews: [Int: PageTagBadgeView] = [:]
     private var rectCache: [UUID: CGRect] = [:]
-    
+    private var isRefreshQueued = false
+
     private let previewLayer = CAShapeLayer()
     
     private enum EditMode {
@@ -334,7 +367,13 @@ final class NoteAnchorOverlayView: UIView, UIGestureRecognizerDelegate {
     }
     
     func scheduleRefresh() {
-        setNeedsLayout() // 接入系统渲染周期批处理绘制调用
+        guard !isRefreshQueued else { return }
+        isRefreshQueued = true
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.isRefreshQueued = false
+            self.setNeedsLayout()
+        }
     }
     
     override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
@@ -404,17 +443,17 @@ final class NoteAnchorOverlayView: UIView, UIGestureRecognizerDelegate {
                     
                     if selected && isEditingEnabled {
                         let handle = resizeHandleRect(for: overlayRect)
-                        let handlePath = UIBezierPath(roundedRect: handle, cornerRadius: 2)
-                        
-                        let handleLayer = CAShapeLayer()
-                        handleLayer.path = handlePath.cgPath
-                        handleLayer.fillColor = UIColor.systemOrange.cgColor
-                        handleLayer.name = "resize-handle"
-                        
-                        layer.sublayers?.removeAll(where: { $0.name == "resize-handle" })
-                        layer.addSublayer(handleLayer)
-                    } else {
-                        layer.sublayers?.removeAll(where: { $0.name == "resize-handle" })
+                        let handleLayer = (layer.sublayers?.first(where: { $0.name == "resize-handle" }) as? CAShapeLayer) ?? {
+                            let created = CAShapeLayer()
+                            created.name = "resize-handle"
+                            created.fillColor = UIColor.systemOrange.cgColor
+                            layer.addSublayer(created)
+                            return created
+                        }()
+                        handleLayer.path = UIBezierPath(roundedRect: handle, cornerRadius: 2).cgPath
+                        handleLayer.isHidden = false
+                    } else if let handleLayer = layer.sublayers?.first(where: { $0.name == "resize-handle" }) {
+                        handleLayer.isHidden = true
                     }
                     
                     if showsContentBubbles {
