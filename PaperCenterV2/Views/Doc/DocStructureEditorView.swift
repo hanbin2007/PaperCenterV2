@@ -23,15 +23,16 @@ struct DocStructureEditorView: View {
     @State private var expandedGroupIDs: Set<UUID> = []
     @State private var presentedSheet: PresentedSheet?
     @State private var draftDocTitle: String = ""
+    @State private var draftGroupTitle: String = ""
+    @State private var compactPanel: CompactEditorPanel = .structure
 
     var body: some View {
         NavigationStack {
-            List {
-                structureSection
-                metadataSection
-                statusSection
+            GeometryReader { proxy in
+                editorContent(for: proxy.size.width)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
-            .navigationTitle("Edit Structure")
+            .navigationTitle("Document Structure")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -56,7 +57,89 @@ struct DocStructureEditorView: View {
             }
             .onChange(of: selectedNode) { _, _ in
                 rebuildAssignmentViewModel()
+                syncDraftFieldsForSelection()
+                compactPanel = .inspector
             }
+        }
+    }
+
+    // MARK: - Layout
+
+    @ViewBuilder
+    private func editorContent(for width: CGFloat) -> some View {
+        if width >= 920 {
+            splitInspectorLayout(for: width)
+        } else {
+            compactInspectorLayout
+        }
+    }
+
+    private func splitInspectorLayout(for width: CGFloat) -> some View {
+        let sidebarWidth = min(max(320, width * 0.38), 480)
+        return HStack(spacing: 0) {
+            structurePanel
+                .frame(width: sidebarWidth)
+                .background(Color(uiColor: .secondarySystemGroupedBackground))
+
+            Divider()
+
+            inspectorPanel
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(uiColor: .systemGroupedBackground))
+        }
+    }
+
+    private var compactInspectorLayout: some View {
+        VStack(spacing: 12) {
+            Picker("Panel", selection: $compactPanel) {
+                ForEach(CompactEditorPanel.allCases) { panel in
+                    Text(panel.title)
+                        .tag(panel)
+                }
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal, 16)
+            .padding(.top, 10)
+
+            Group {
+                switch compactPanel {
+                case .structure:
+                    structurePanel
+                case .inspector:
+                    inspectorPanel
+                }
+            }
+        }
+    }
+
+    // MARK: - Panels
+
+    private var structurePanel: some View {
+        List {
+            structureSection
+        }
+        .listStyle(.insetGrouped)
+    }
+
+    private var inspectorPanel: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                inspectorCard(title: "Selection", systemImage: "cursorarrow.rays") {
+                    selectionSummarySection
+                }
+
+                inspectorCard(title: selectedNodeMetadataTitle, systemImage: "slider.horizontal.3") {
+                    metadataEditorSection
+                }
+
+                if let viewModel,
+                   viewModel.statusMessage != nil || viewModel.errorMessage != nil {
+                    inspectorCard(title: "Status", systemImage: "checkmark.circle") {
+                        statusRow
+                    }
+                }
+            }
+            .padding(16)
         }
     }
 
@@ -117,20 +200,58 @@ struct DocStructureEditorView: View {
         }
     }
 
-    private var metadataSection: some View {
-        Section(selectedNodeMetadataTitle) {
-            if selectedNode == .doc {
-                TextField("Document Title", text: $draftDocTitle)
-                    .textInputAutocapitalization(.words)
-                    .onSubmit {
-                        commitDocTitle()
-                    }
+    private var selectionSummarySection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(selectedNodeTitle)
+                .font(.headline)
 
-                Button("Update Title") {
-                    commitDocTitle()
+            Text(selectedNodeSummary)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: 10) {
+                Button {
+                    presentedSheet = .newGroup
+                } label: {
+                    Label("Add Group", systemImage: "folder.badge.plus")
                 }
-                .disabled(draftDocTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .buttonStyle(.bordered)
+
+                if case .group(let groupID) = selectedNode,
+                   let group = resolveGroup(groupID) {
+                    Button {
+                        presentedSheet = .newPage(group)
+                    } label: {
+                        Label("Add Page", systemImage: "plus.circle")
+                    }
+                    .buttonStyle(.bordered)
+                }
             }
+        }
+    }
+
+    private var metadataEditorSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            switch selectedNode {
+            case .doc:
+                documentTitleEditor
+
+            case .group(let groupID):
+                if let group = resolveGroup(groupID) {
+                    groupTitleEditor(group)
+                } else {
+                    unresolvedSelectionRow
+                }
+
+            case .page(let pageID):
+                if let page = resolvePage(pageID) {
+                    pageReferenceInspector(for: page)
+                } else {
+                    unresolvedSelectionRow
+                }
+            }
+
+            Divider()
 
             if let assignmentViewModel {
                 TagVariableAssignmentView(
@@ -140,34 +261,106 @@ struct DocStructureEditorView: View {
 
                 VariableValueSectionView(viewModel: assignmentViewModel)
             } else {
-                HStack(spacing: 8) {
-                    Image(systemName: "exclamationmark.triangle")
-                        .foregroundStyle(.secondary)
-                    Text("Unable to resolve the selected node")
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                }
-                .padding(.vertical, 4)
+                unresolvedSelectionRow
             }
         }
     }
 
-    @ViewBuilder
-    private var statusSection: some View {
-        if let viewModel,
-           viewModel.statusMessage != nil || viewModel.errorMessage != nil {
-            Section("Status") {
-                if let status = viewModel.statusMessage {
-                    Label(status, systemImage: "checkmark.circle")
-                        .foregroundStyle(.green)
-                        .font(.caption)
+    private var documentTitleEditor: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Document Title")
+                .font(.subheadline.weight(.semibold))
+            TextField("Document Title", text: $draftDocTitle)
+                .textInputAutocapitalization(.words)
+                .textFieldStyle(.roundedBorder)
+                .onSubmit {
+                    commitDocTitle()
                 }
 
-                if let error = viewModel.errorMessage {
-                    Label(error, systemImage: "xmark.circle")
-                        .foregroundStyle(.red)
-                        .font(.caption)
+            Button("Update Title") {
+                commitDocTitle()
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+            .disabled(draftDocTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        }
+    }
+
+    private func groupTitleEditor(_ group: PageGroup) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Page Group Title")
+                .font(.subheadline.weight(.semibold))
+            TextField("Page Group Title", text: $draftGroupTitle)
+                .textInputAutocapitalization(.words)
+                .textFieldStyle(.roundedBorder)
+                .onSubmit {
+                    commitGroupTitle(group)
                 }
+
+            Button("Update Group Title") {
+                commitGroupTitle(group)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+            .disabled(draftGroupTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        }
+    }
+
+    private func pageReferenceInspector(for page: Page) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Page Reference")
+                .font(.subheadline.weight(.semibold))
+
+            LabeledContent("Bundle") {
+                Text(page.pdfBundle?.displayName ?? "Missing Bundle")
+                    .foregroundStyle(.secondary)
+            }
+
+            LabeledContent("Page Number") {
+                Text("\(page.currentPageNumber)")
+                    .foregroundStyle(.secondary)
+            }
+
+            if let group = page.pageGroup {
+                LabeledContent("Group") {
+                    Text(group.title)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Button {
+                presentedSheet = .editPage(page)
+            } label: {
+                Label("Edit Page Reference", systemImage: "pencil")
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+        }
+    }
+
+    private var unresolvedSelectionRow: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "exclamationmark.triangle")
+                .foregroundStyle(.secondary)
+            Text("Unable to resolve the selected node")
+                .foregroundStyle(.secondary)
+            Spacer()
+        }
+        .padding(.vertical, 4)
+    }
+
+    private var statusRow: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let status = viewModel?.statusMessage {
+                Label(status, systemImage: "checkmark.circle")
+                    .foregroundStyle(.green)
+                    .font(.caption)
+            }
+
+            if let error = viewModel?.errorMessage {
+                Label(error, systemImage: "xmark.circle")
+                    .foregroundStyle(.red)
+                    .font(.caption)
             }
         }
     }
@@ -468,6 +661,26 @@ struct DocStructureEditorView: View {
 
     // MARK: - Helpers
 
+    private func inspectorCard<Content: View>(
+        title: String,
+        systemImage: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label(title, systemImage: systemImage)
+                .font(.headline)
+                .foregroundStyle(.primary)
+
+            content()
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color(uiColor: .secondarySystemGroupedBackground))
+        )
+    }
+
     private var selectedNodeMetadataTitle: String {
         switch selectedNode {
         case .doc:
@@ -481,12 +694,44 @@ struct DocStructureEditorView: View {
         }
     }
 
+    private var selectedNodeTitle: String {
+        switch selectedNode {
+        case .doc:
+            return doc.title
+        case .group(let groupID):
+            return resolveGroup(groupID)?.title ?? "Page Group"
+        case .page(let pageID):
+            if let page = resolvePage(pageID) {
+                return "Page \(page.currentPageNumber)"
+            }
+            return "Page"
+        }
+    }
+
+    private var selectedNodeSummary: String {
+        switch selectedNode {
+        case .doc:
+            return "\(doc.orderedPageGroups.count) groups • \(doc.totalPageCount) pages"
+        case .group(let groupID):
+            if let group = resolveGroup(groupID) {
+                return "\(group.orderedPages.count) pages in this group"
+            }
+            return "This group no longer exists"
+        case .page(let pageID):
+            guard let page = resolvePage(pageID) else {
+                return "This page no longer exists"
+            }
+            let bundle = page.pdfBundle?.displayName ?? "Missing bundle"
+            return "\(bundle) • Page \(page.currentPageNumber)"
+        }
+    }
+
     private func initializeStateIfNeeded() {
         guard viewModel == nil else { return }
         viewModel = DocStructureEditorViewModel(modelContext: modelContext, doc: doc)
-        draftDocTitle = doc.title
         expandedGroupIDs = Set(doc.orderedPageGroups.map(\.id))
         selectedNode = .doc
+        syncDraftFieldsForSelection()
         rebuildAssignmentViewModel()
     }
 
@@ -494,6 +739,22 @@ struct DocStructureEditorView: View {
         guard let viewModel else { return }
         viewModel.renameDocument(title: draftDocTitle)
         draftDocTitle = doc.title
+    }
+
+    private func commitGroupTitle(_ group: PageGroup) {
+        guard let viewModel else { return }
+        viewModel.renamePageGroup(group, title: draftGroupTitle)
+        draftGroupTitle = group.title
+    }
+
+    private func syncDraftFieldsForSelection() {
+        draftDocTitle = doc.title
+        switch selectedNode {
+        case .group(let groupID):
+            draftGroupTitle = resolveGroup(groupID)?.title ?? ""
+        default:
+            draftGroupTitle = ""
+        }
     }
 
     private func rebuildAssignmentViewModel() {
@@ -536,6 +797,10 @@ struct DocStructureEditorView: View {
         return nil
     }
 
+    private func resolveGroup(_ id: UUID) -> PageGroup? {
+        viewModel?.orderedGroups.first(where: { $0.id == id })
+    }
+
     private func toggleGroupExpansion(_ groupID: UUID) {
         if expandedGroupIDs.contains(groupID) {
             expandedGroupIDs.remove(groupID)
@@ -572,6 +837,7 @@ struct DocStructureEditorView: View {
 
     private func didMutateStructure() {
         sanitizeSelection()
+        syncDraftFieldsForSelection()
         rebuildAssignmentViewModel()
     }
 
@@ -598,6 +864,22 @@ struct DocStructureEditorView: View {
 private struct SelectionTarget {
     let entityType: TaggableEntityType
     let target: TagVariableAssignmentViewModel.Target
+}
+
+private enum CompactEditorPanel: String, CaseIterable, Identifiable {
+    case structure
+    case inspector
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .structure:
+            return "Structure"
+        case .inspector:
+            return "Inspector"
+        }
+    }
 }
 
 private enum TreeNodeSelection: Hashable {

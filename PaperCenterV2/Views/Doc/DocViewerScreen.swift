@@ -106,7 +106,7 @@ struct DocViewerScreen: View {
                 .accessibilityLabel("Edit Structure")
             }
         }
-        .sheet(isPresented: $showingStructureEditor, onDismiss: {
+        .fullScreenCover(isPresented: $showingStructureEditor, onDismiss: {
             if let readingGroupID,
                doc.orderedPageGroups.contains(where: { $0.id == readingGroupID }) == false {
                 self.readingGroupID = nil
