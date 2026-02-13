@@ -68,6 +68,251 @@ private struct ViewerGroupEntry: Identifiable {
     }
 }
 
+private struct ViewerDerivedPayload {
+    let signature: Int
+    let logicalEntries: [ViewerLogicalEntry]
+    let logicalEntryByID: [UUID: ViewerLogicalEntry]
+    let groupEntries: [ViewerGroupEntry]
+    let composedPDFEntries: [ComposedPDFPageEntry]
+    let composedIndexByLogicalPageID: [UUID: Int]
+    let composedIndexByPageVersionID: [UUID: Int]
+    let pageTagsByComposedIndex: [Int: PageTagOverlayItem]
+    let allPageVersionIDs: [UUID]
+
+    static let empty = ViewerDerivedPayload(
+        signature: .min,
+        logicalEntries: [],
+        logicalEntryByID: [:],
+        groupEntries: [],
+        composedPDFEntries: [],
+        composedIndexByLogicalPageID: [:],
+        composedIndexByPageVersionID: [:],
+        pageTagsByComposedIndex: [:],
+        allPageVersionIDs: []
+    )
+}
+
+@MainActor
+private final class ViewerDerivedCache {
+    private var cachedPayload: ViewerDerivedPayload = .empty
+
+    func payload(
+        for store: UniversalDocSessionStore,
+        dataProvider: UniversalDocDataProvider
+    ) -> ViewerDerivedPayload {
+        let signature = makeSignature(for: store)
+        guard cachedPayload.signature != signature else {
+            return cachedPayload
+        }
+
+        let rebuilt = rebuildPayload(
+            signature: signature,
+            store: store,
+            dataProvider: dataProvider
+        )
+        cachedPayload = rebuilt
+        return rebuilt
+    }
+
+    func invalidate() {
+        cachedPayload = .empty
+    }
+
+    private func makeSignature(for store: UniversalDocSessionStore) -> Int {
+        var hasher = Hasher()
+        hasher.combine(store.session.slots.count)
+
+        for slot in store.session.slots {
+            hasher.combine(slot.id)
+            hasher.combine(slot.docID)
+            hasher.combine(slot.pageID)
+            hasher.combine(slot.pageGroupID)
+            hasher.combine(slot.groupOrderKey)
+            hasher.combine(slot.pageOrderInGroup)
+            hasher.combine(slot.docTitle)
+            hasher.combine(slot.pageGroupTitle)
+            hasher.combine(slot.versionOptions.count)
+
+            for option in slot.versionOptions {
+                hasher.combine(option.id)
+                hasher.combine(option.pdfBundleID)
+                hasher.combine(option.pageNumber)
+                hasher.combine(option.ordinal)
+                hasher.combine(option.isCurrentDefault)
+            }
+
+            let selectedVersionID = store.currentPreviewVersionID(for: slot.id) ?? slot.defaultVersionID
+            let selectedSource = store.currentSource(for: slot.id) ?? slot.defaultSource
+            hasher.combine(selectedVersionID)
+            hasher.combine(selectedSource.rawValue)
+        }
+
+        return hasher.finalize()
+    }
+
+    private func rebuildPayload(
+        signature: Int,
+        store: UniversalDocSessionStore,
+        dataProvider: UniversalDocDataProvider
+    ) -> ViewerDerivedPayload {
+        let logicalEntries: [ViewerLogicalEntry] = Array(store.session.slots.enumerated()).compactMap { item -> ViewerLogicalEntry? in
+            let index = item.offset
+            let slot = item.element
+            let selectedVersionID = store.currentPreviewVersionID(for: slot.id) ?? slot.defaultVersionID
+            guard let selectedVersion = slot.versionOptions.first(where: { $0.id == selectedVersionID }) else {
+                return nil
+            }
+
+            let requestedSource = store.currentSource(for: slot.id) ?? slot.defaultSource
+            let renderData = dataProvider.resolve(
+                slot: slot,
+                selectedVersionID: selectedVersion.id,
+                selectedSource: requestedSource
+            )
+
+            let effectiveSource = renderData?.source ?? requestedSource
+            return ViewerLogicalEntry(
+                id: slot.id,
+                logicalIndex: index,
+                slot: slot,
+                page: dataProvider.page(for: slot.pageID),
+                selectedVersion: selectedVersion,
+                selectedSource: effectiveSource,
+                renderData: renderData
+            )
+        }
+
+        let logicalEntryByID: [UUID: ViewerLogicalEntry] = Dictionary(
+            uniqueKeysWithValues: logicalEntries.map { ($0.id, $0) }
+        )
+
+        let grouped: [String: [ViewerLogicalEntry]] = Dictionary(grouping: logicalEntries) { entry in
+            let groupToken = entry.slot.pageGroupID?.uuidString ?? "ungrouped"
+            return "\(entry.slot.docID.uuidString)|\(groupToken)"
+        }
+
+        let groupEntries: [ViewerGroupEntry] = grouped.compactMap { item -> ViewerGroupEntry? in
+            let key = item.key
+            let values = item.value
+            guard let first = values.first else { return nil }
+            let orderedValues = values.sorted { lhs, rhs in
+                if lhs.slot.pageOrderInGroup == rhs.slot.pageOrderInGroup {
+                    return lhs.logicalIndex < rhs.logicalIndex
+                }
+                return lhs.slot.pageOrderInGroup < rhs.slot.pageOrderInGroup
+            }
+            return ViewerGroupEntry(
+                id: key,
+                docID: first.slot.docID,
+                docTitle: first.slot.docTitle,
+                pageGroupID: first.slot.pageGroupID,
+                pageGroupTitle: first.slot.pageGroupTitle,
+                groupOrderKey: first.slot.groupOrderKey,
+                entries: orderedValues
+            )
+        }
+        .sorted { lhs, rhs in
+            if lhs.groupOrderKey == rhs.groupOrderKey {
+                return lhs.id < rhs.id
+            }
+            return lhs.groupOrderKey < rhs.groupOrderKey
+        }
+
+        var composedPDFEntries: [ComposedPDFPageEntry] = []
+        composedPDFEntries.reserveCapacity(logicalEntries.count)
+        for entry in logicalEntries {
+            guard let pdfRender = resolvedPDFRenderData(for: entry, dataProvider: dataProvider) else {
+                continue
+            }
+            composedPDFEntries.append(
+                ComposedPDFPageEntry(
+                    id: entry.id,
+                    logicalPageID: entry.id,
+                    pageID: entry.slot.pageID,
+                    pageVersionID: entry.selectedVersion.id,
+                    pageNumberInDoc: entry.logicalIndex + 1,
+                    fileURL: pdfRender.fileURL,
+                    sourcePageNumber: pdfRender.pageNumber
+                )
+            )
+        }
+
+        let composedIndexByLogicalPageID = Dictionary(
+            uniqueKeysWithValues: composedPDFEntries.enumerated().map { ($1.logicalPageID, $0) }
+        )
+        let composedIndexByPageVersionID = Dictionary(
+            uniqueKeysWithValues: composedPDFEntries.enumerated().map { ($1.pageVersionID, $0) }
+        )
+
+        var pageTagsByComposedIndex: [Int: PageTagOverlayItem] = [:]
+        for (composedIndex, composedEntry) in composedPDFEntries.enumerated() {
+            let tags = dataProvider.tags(pageID: composedEntry.pageID)
+            guard !tags.isEmpty else { continue }
+
+            let chips = tags.map { tag in
+                PageTagOverlayChip(
+                    id: tag.id,
+                    name: tag.name,
+                    colorHex: tag.color
+                )
+            }
+            let groupTitle = logicalEntryByID[composedEntry.logicalPageID]?.slot.pageGroupTitle ?? ""
+            pageTagsByComposedIndex[composedIndex] = PageTagOverlayItem(
+                composedPageIndex: composedIndex,
+                pageGroupTitle: groupTitle,
+                chips: chips
+            )
+        }
+
+        var seen = Set<UUID>()
+        var allPageVersionIDs: [UUID] = []
+        for entry in logicalEntries {
+            let versionID = entry.selectedVersion.id
+            if seen.insert(versionID).inserted {
+                allPageVersionIDs.append(versionID)
+            }
+        }
+
+        return ViewerDerivedPayload(
+            signature: signature,
+            logicalEntries: logicalEntries,
+            logicalEntryByID: logicalEntryByID,
+            groupEntries: groupEntries,
+            composedPDFEntries: composedPDFEntries,
+            composedIndexByLogicalPageID: composedIndexByLogicalPageID,
+            composedIndexByPageVersionID: composedIndexByPageVersionID,
+            pageTagsByComposedIndex: pageTagsByComposedIndex,
+            allPageVersionIDs: allPageVersionIDs
+        )
+    }
+
+    private func resolvedPDFRenderData(
+        for entry: ViewerLogicalEntry,
+        dataProvider: UniversalDocDataProvider
+    ) -> (fileURL: URL, pageNumber: Int)? {
+        if let renderData = entry.renderData,
+           renderData.source != .ocr,
+           let fileURL = renderData.fileURL {
+            return (fileURL, renderData.pageNumber)
+        }
+
+        for candidate in [UniversalDocViewerSource.display, .original] {
+            let fallback = dataProvider.resolve(
+                slot: entry.slot,
+                selectedVersionID: entry.selectedVersion.id,
+                selectedSource: candidate
+            )
+            if let fallback,
+               fallback.source != .ocr,
+               let fileURL = fallback.fileURL {
+                return (fileURL, fallback.pageNumber)
+            }
+        }
+
+        return nil
+    }
+}
+
 struct UniversalDocViewer: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -108,32 +353,14 @@ struct UniversalDocViewer: View {
     @State private var noteFocusRequestID = 0
     
     @State private var notesViewModel: DocNotesEditorViewModel?
+    @State private var derivedCache = ViewerDerivedCache()
+
+    private var derivedPayload: ViewerDerivedPayload {
+        derivedCache.payload(for: store, dataProvider: dataProvider)
+    }
     
     private var logicalEntries: [ViewerLogicalEntry] {
-        Array(store.session.slots.enumerated()).compactMap { index, slot in
-            let selectedVersionID = store.currentPreviewVersionID(for: slot.id) ?? slot.defaultVersionID
-            guard let selectedVersion = slot.versionOptions.first(where: { $0.id == selectedVersionID }) else {
-                return nil
-            }
-            
-            let requestedSource = store.currentSource(for: slot.id) ?? slot.defaultSource
-            let renderData = dataProvider.resolve(
-                slot: slot,
-                selectedVersionID: selectedVersion.id,
-                selectedSource: requestedSource
-            )
-            
-            let effectiveSource = renderData?.source ?? requestedSource
-            return ViewerLogicalEntry(
-                id: slot.id,
-                logicalIndex: index,
-                slot: slot,
-                page: dataProvider.page(for: slot.pageID),
-                selectedVersion: selectedVersion,
-                selectedSource: effectiveSource,
-                renderData: renderData
-            )
-        }
+        derivedPayload.logicalEntries
     }
     
     private var focusedEntry: ViewerLogicalEntry? {
@@ -149,35 +376,7 @@ struct UniversalDocViewer: View {
     }
     
     private var groupEntries: [ViewerGroupEntry] {
-        let grouped = Dictionary(grouping: logicalEntries) { entry in
-            let groupToken = entry.slot.pageGroupID?.uuidString ?? "ungrouped"
-            return "\(entry.slot.docID.uuidString)|\(groupToken)"
-        }
-        
-        return grouped.compactMap { key, values in
-            guard let first = values.first else { return nil }
-            let orderedValues = values.sorted { lhs, rhs in
-                if lhs.slot.pageOrderInGroup == rhs.slot.pageOrderInGroup {
-                    return lhs.logicalIndex < rhs.logicalIndex
-                }
-                return lhs.slot.pageOrderInGroup < rhs.slot.pageOrderInGroup
-            }
-            return ViewerGroupEntry(
-                id: key,
-                docID: first.slot.docID,
-                docTitle: first.slot.docTitle,
-                pageGroupID: first.slot.pageGroupID,
-                pageGroupTitle: first.slot.pageGroupTitle,
-                groupOrderKey: first.slot.groupOrderKey,
-                entries: orderedValues
-            )
-        }
-        .sorted { lhs, rhs in
-            if lhs.groupOrderKey == rhs.groupOrderKey {
-                return lhs.id < rhs.id
-            }
-            return lhs.groupOrderKey < rhs.groupOrderKey
-        }
+        derivedPayload.groupEntries
     }
     
     private var focusedGroupEntry: ViewerGroupEntry? {
@@ -217,30 +416,15 @@ struct UniversalDocViewer: View {
     }
     
     private var logicalEntryByID: [UUID: ViewerLogicalEntry] {
-        Dictionary(uniqueKeysWithValues: logicalEntries.map { ($0.id, $0) })
+        derivedPayload.logicalEntryByID
     }
     
     private var composedPDFEntries: [ComposedPDFPageEntry] {
-        var composed: [ComposedPDFPageEntry] = []
-        for entry in logicalEntries {
-            guard let pdfRender = resolvedPDFRenderData(for: entry) else { continue }
-            composed.append(
-                ComposedPDFPageEntry(
-                    id: entry.id,
-                    logicalPageID: entry.id,
-                    pageID: entry.slot.pageID,
-                    pageVersionID: entry.selectedVersion.id,
-                    pageNumberInDoc: entry.logicalIndex + 1,
-                    fileURL: pdfRender.fileURL,
-                    sourcePageNumber: pdfRender.pageNumber
-                )
-            )
-        }
-        return composed
+        derivedPayload.composedPDFEntries
     }
     
     private var composedIndexByLogicalPageID: [UUID: Int] {
-        Dictionary(uniqueKeysWithValues: composedPDFEntries.enumerated().map { ($1.logicalPageID, $0) })
+        derivedPayload.composedIndexByLogicalPageID
     }
     
     private var focusedComposedIndex: Int? {
@@ -249,7 +433,7 @@ struct UniversalDocViewer: View {
     }
     
     private var composedIndexByPageVersionID: [UUID: Int] {
-        Dictionary(uniqueKeysWithValues: composedPDFEntries.enumerated().map { ($1.pageVersionID, $0) })
+        derivedPayload.composedIndexByPageVersionID
     }
     
     private var noteAnchors: [NoteAnchorOverlayItem] {
@@ -278,26 +462,7 @@ struct UniversalDocViewer: View {
     
     private var pageTagsByComposedIndex: [Int: PageTagOverlayItem] {
         guard !isOCRMode else { return [:] }
-        var dict: [Int: PageTagOverlayItem] = [:]
-        for (composedIndex, composedEntry) in composedPDFEntries.enumerated() {
-            let tags = dataProvider.tags(pageID: composedEntry.pageID)
-            guard !tags.isEmpty else { continue }
-            
-            let chips = tags.map { tag in
-                PageTagOverlayChip(
-                    id: tag.id,
-                    name: tag.name,
-                    colorHex: tag.color
-                )
-            }
-            let groupTitle = logicalEntryByID[composedEntry.logicalPageID]?.slot.pageGroupTitle ?? ""
-            dict[composedIndex] = PageTagOverlayItem(
-                composedPageIndex: composedIndex,
-                pageGroupTitle: groupTitle,
-                chips: chips
-            )
-        }
-        return dict
+        return derivedPayload.pageTagsByComposedIndex
     }
     
     private var selectedNoteID: UUID? {
@@ -310,15 +475,7 @@ struct UniversalDocViewer: View {
     }
     
     private var allPageVersionIDs: [UUID] {
-        var seen = Set<UUID>()
-        var ordered: [UUID] = []
-        for entry in logicalEntries {
-            let versionID = entry.selectedVersion.id
-            if seen.insert(versionID).inserted {
-                ordered.append(versionID)
-            }
-        }
-        return ordered
+        derivedPayload.allPageVersionIDs
     }
     
     private var currentNotesPageVersionIDs: [UUID] {
@@ -903,29 +1060,6 @@ struct UniversalDocViewer: View {
         guard composedIndex >= 0, composedIndex < composedPDFEntries.count else { return }
         let logicalPageID = composedPDFEntries[composedIndex].logicalPageID
         store.setFocusedPage(logicalPageID)
-    }
-    
-    private func resolvedPDFRenderData(for entry: ViewerLogicalEntry) -> (fileURL: URL, pageNumber: Int)? {
-        if let renderData = entry.renderData,
-           renderData.source != .ocr,
-           let fileURL = renderData.fileURL {
-            return (fileURL, renderData.pageNumber)
-        }
-        
-        for candidate in [UniversalDocViewerSource.display, .original] {
-            let fallback = dataProvider.resolve(
-                slot: entry.slot,
-                selectedVersionID: entry.selectedVersion.id,
-                selectedSource: candidate
-            )
-            if let fallback,
-               fallback.source != .ocr,
-               let fileURL = fallback.fileURL {
-                return (fileURL, fallback.pageNumber)
-            }
-        }
-        
-        return nil
     }
     
     private func syncNotesForAllPages() {
